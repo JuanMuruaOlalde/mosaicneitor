@@ -1,0 +1,5 @@
+_version: 1
+button_choose_image: "Choose image"
+dummy_text_mosaic_size: "Mosaic size -> horizontal: 600 mm   vertical: 400 mm"
+dummy_text_tessela_size: "Base size for tessela -> A-side: 10 mm   B-side: 10 mm"
+dummy_text_here_goes_the_painting: "Here goes the painting of image and grid..."
