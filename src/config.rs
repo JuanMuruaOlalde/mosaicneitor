@@ -2,6 +2,8 @@ use dirs::home_dir;
 use eframe::emath::Vec2;
 use std::path::PathBuf;
 
+pub const WORKING_LOCALE: &str = "en";
+
 pub fn default_viewport_dimensions() -> Vec2 {
     Vec2::new(1024.0, 800.0)
 }
