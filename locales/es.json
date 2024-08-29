@@ -1,7 +1,11 @@
 {
     "_version": 1,
     "button_choose_image": "Elegir imagen",
-    "dummy_text_mosaic_size": "Tamaño del mosaico -> horizontal: 600 mm   vertical: 400 mm",
-    "dummy_text_tessela_size": "Tamaño base de tesela -> ladoA: 10 mm   ladoB: 10 mm",
+    "mosaic_size": "Tamaño del mosaico -> ",
+    "horizontal": "en horizontal:",
+    "vertical": "en vertical:",
+    "tessela_size": "Tamaño base de tesela -> ",
+    "A_side": "ladoA",
+    "B_side": "ladoB",
     "dummy_text_here_goes_the_painting": "Aqui se pintará la imagen con la rejilla base de teselas..."
 }

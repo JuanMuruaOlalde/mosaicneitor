@@ -11,9 +11,15 @@ pub fn default_viewport_dimensions() -> Vec2 {
 pub fn default_working_folder() -> PathBuf {
     match home_dir() {
         Some(x) => x,
-        None => std::path::PathBuf::from("/path/to/app"),
+        None => std::path::PathBuf::new(),
     }
+    // A list of available folders is in: https://docs.rs/dirs/latest/dirs/#functions
 }
+
+pub const DEFAULT_MOSAIC_DIMENSIONS_HORIZONTAL_MM: i32 = 600;
+pub const DEFAULT_MOSAIC_DIMENSIONS_VERTICAL_MM: i32 = 400;
+pub const DEFAULT_TESSELA_SIZE_SIDE1_MM: i32 = 10;
+pub const DEFAULT_TESSELA_SIZE_SIDE2_MM: i32 = 10;
 
 #[cfg(test)]
 mod test {
