@@ -43,10 +43,11 @@ impl MosaicneitorApp {
                 .default_file_filter("PNG"),
             selected_file: None,
             image: None,
-            dimensions_horizontal: config::DEFAULT_MOSAIC_DIMENSIONS_HORIZONTAL_MM.to_string(),
-            dimensions_vertical: config::DEFAULT_MOSAIC_DIMENSIONS_VERTICAL_MM.to_string(),
-            size_side_a: config::DEFAULT_TESSELA_SIZE_SIDE1_MM.to_string(),
-            size_side_b: config::DEFAULT_TESSELA_SIZE_SIDE2_MM.to_string(),
+            dimensions_horizontal: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_HORIZONTAL_MM
+                .to_string(),
+            dimensions_vertical: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_VERTICAL_MM.to_string(),
+            size_side_a: config::DEFAULT_BASE_TESSELA_SIZE_SIDE1_MM.to_string(),
+            size_side_b: config::DEFAULT_BASE_TESSELA_SIZE_SIDE2_MM.to_string(),
         }
     }
     fn name() -> &'static str {
@@ -96,7 +97,18 @@ impl eframe::App for MosaicneitorApp {
             }
             match &self.selected_file {
                 Some(x) => {
-                    ui.label(format!("{}", x.as_path().display()));
+                    ui.label(format!(
+                        "{} ({}x{})",
+                        x.as_path().display(),
+                        match &self.image {
+                            Some(img) => img.size[0],
+                            None => 0,
+                        },
+                        match &self.image {
+                            Some(img) => img.size[1],
+                            None => 0,
+                        },
+                    ));
                     ui.horizontal(|ui| {
                         ui.label(t!("mosaic_size"));
                         ui.label(t!("horizontal"));
@@ -125,7 +137,16 @@ impl eframe::App for MosaicneitorApp {
                 );
                 let sized_texture = egui::load::SizedTexture::new(
                     handle.id(),
-                    egui::vec2(img.size[0] as f32, img.size[1] as f32),
+                    egui::vec2(
+                        match &self.dimensions_horizontal.parse::<f32>() {
+                            Ok(x) => *x,
+                            Err(_error) => 1.0,
+                        },
+                        match &self.dimensions_vertical.parse::<f32>() {
+                            Ok(x) => *x,
+                            Err(_error) => 1.0,
+                        },
+                    ),
                 );
                 ui.add(egui::Image::new(sized_texture));
             }
