@@ -98,7 +98,7 @@ impl eframe::App for MosaicneitorApp {
             match &self.selected_file {
                 Some(x) => {
                     ui.label(format!(
-                        "{} ({}x{})",
+                        "{} ({}x{})(px)",
                         x.as_path().display(),
                         match &self.image {
                             Some(img) => img.size[0],
@@ -110,47 +110,61 @@ impl eframe::App for MosaicneitorApp {
                         },
                     ));
                     ui.horizontal(|ui| {
-                        ui.label(t!("mosaic_size"));
-                        ui.label(t!("horizontal"));
-                        ui.text_edit_singleline(&mut self.dimensions_horizontal);
-                        ui.label(t!("vertical"));
-                        ui.text_edit_singleline(&mut self.dimensions_vertical);
+                        ui.label(format!("{} ->", t!("mosaic_size")));
+                        ui.label(format!("{} (mm):", t!("horizontal")));
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.dimensions_horizontal)
+                                .desired_width(75.0),
+                        );
+                        ui.label(format!("{} (mm):", t!("vertical")));
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.dimensions_vertical)
+                                .desired_width(75.0),
+                        );
                     });
                     ui.horizontal(|ui| {
-                        ui.label(t!("tessela_size"));
-                        ui.label(t!("A_side"));
-                        ui.text_edit_singleline(&mut self.size_side_a);
-                        ui.label(t!("B_side"));
-                        ui.text_edit_singleline(&mut self.size_side_b);
+                        ui.label(format!("{} ->", t!("tessela_size")));
+                        ui.label(format!("{} (mm):", t!("A_side")));
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.size_side_a).desired_width(75.0),
+                        );
+                        ui.label(format!("{} (mm):", t!("B_side")));
+                        ui.add(
+                            egui::TextEdit::singleline(&mut self.size_side_b).desired_width(75.0),
+                        );
                     });
                 }
                 None => (),
             }
         });
 
-        egui::CentralPanel::default().show(ctx, |ui| match &self.image {
-            Some(img) => {
-                let handle = ctx.load_texture(
-                    "image-to-display",
-                    egui::ImageData::from(img.clone()),
-                    TextureOptions::default(),
-                );
-                let sized_texture = egui::load::SizedTexture::new(
-                    handle.id(),
-                    egui::vec2(
-                        match &self.dimensions_horizontal.parse::<f32>() {
-                            Ok(x) => *x,
-                            Err(_error) => 1.0,
-                        },
-                        match &self.dimensions_vertical.parse::<f32>() {
-                            Ok(x) => *x,
-                            Err(_error) => 1.0,
-                        },
-                    ),
-                );
-                ui.add(egui::Image::new(sized_texture));
-            }
-            None => (),
+        egui::CentralPanel::default().show(ctx, |ui| {
+            egui::ScrollArea::both().show(ui, |ui| {
+                match &self.image {
+                    Some(img) => {
+                        let handle = ctx.load_texture(
+                            "image-to-display",
+                            egui::ImageData::from(img.clone()),
+                            TextureOptions::default(),
+                        );
+                        let sized_texture = egui::load::SizedTexture::new(
+                            handle.id(),
+                            egui::vec2(
+                                match &self.dimensions_horizontal.parse::<f32>() {
+                                    Ok(x) => *x,
+                                    Err(_error) => 1.0,
+                                },
+                                match &self.dimensions_vertical.parse::<f32>() {
+                                    Ok(x) => *x,
+                                    Err(_error) => 1.0,
+                                },
+                            ),
+                        );
+                        ui.image(sized_texture);
+                    }
+                    None => (),
+                };
+            });
         });
     }
 }

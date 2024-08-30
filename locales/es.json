@@ -1,11 +1,10 @@
 {
     "_version": 1,
     "button_choose_image": "Elegir imagen",
-    "mosaic_size": "Tamaño del mosaico -> ",
-    "horizontal": "en horizontal:",
-    "vertical": "en vertical:",
+    "mosaic_size": "Tamaño del mosaico",
+    "horizontal": "en horizontal",
+    "vertical": "en vertical",
     "tessela_size": "Tamaño base de tesela -> ",
     "A_side": "ladoA",
-    "B_side": "ladoB",
-    "dummy_text_here_goes_the_painting": "Aqui se pintará la imagen con la rejilla base de teselas..."
+    "B_side": "ladoB"
 }
