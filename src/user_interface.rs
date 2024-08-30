@@ -1,7 +1,7 @@
 use eframe::egui::{self, TextureOptions};
 use egui_file_dialog::FileDialog;
 
-use crate::config;
+use crate::{config, utils};
 
 pub fn lauch_user_interface() -> eframe::Result<()> {
     rust_i18n::set_locale(crate::config::WORKING_LOCALE);
@@ -80,6 +80,26 @@ impl MosaicneitorApp {
             None => self.image = None,
         }
     }
+
+    fn adjust_dimensions_to_image_proportions(&mut self) {
+        let image_dimensions = match &self.image {
+            Some(img) => [img.size[0], img.size[1]],
+            None => [1, 1],
+        };
+        let dimensions = [
+            match &self.dimensions_horizontal.parse::<usize>() {
+                Ok(x) => *x,
+                Err(_error) => 1,
+            },
+            match &self.dimensions_vertical.parse::<usize>() {
+                Ok(x) => *x,
+                Err(_error) => 1,
+            },
+        ];
+        let ajusted_dimensions = utils::round_to_the_nearest_tens(dimensions, image_dimensions);
+        self.dimensions_horizontal = ajusted_dimensions[0].to_string();
+        self.dimensions_vertical = ajusted_dimensions[1].to_string();
+    }
 }
 
 impl eframe::App for MosaicneitorApp {
@@ -87,27 +107,26 @@ impl eframe::App for MosaicneitorApp {
         ctx.set_pixels_per_point(1.5);
 
         egui::TopBottomPanel::top("menu").show(ctx, |ui| {
-            if ui.button(t!("button_choose_image")).clicked() {
+            if ui.button(t!("btn_choose_image")).clicked() {
                 self.file_dialog.select_file();
             }
             self.file_dialog.update(ctx);
             if let Some(path) = self.file_dialog.take_selected() {
                 self.selected_file = Some(path.to_path_buf());
                 self.load_image_from_selected_file();
+                self.adjust_dimensions_to_image_proportions();
             }
             match &self.selected_file {
                 Some(x) => {
+                    let image_dimensions = match &self.image {
+                        Some(img) => [img.size[0], img.size[1]],
+                        None => [1, 1],
+                    };
                     ui.label(format!(
                         "{} ({}x{})(px)",
                         x.as_path().display(),
-                        match &self.image {
-                            Some(img) => img.size[0],
-                            None => 0,
-                        },
-                        match &self.image {
-                            Some(img) => img.size[1],
-                            None => 0,
-                        },
+                        image_dimensions[0],
+                        image_dimensions[1],
                     ));
                     ui.horizontal(|ui| {
                         ui.label(format!("{} ->", t!("mosaic_size")));
@@ -121,6 +140,9 @@ impl eframe::App for MosaicneitorApp {
                             egui::TextEdit::singleline(&mut self.dimensions_vertical)
                                 .desired_width(75.0),
                         );
+                        if ui.button(t!("btn_adjust_mosaic_to_image")).clicked() {
+                            self.adjust_dimensions_to_image_proportions();
+                        }
                     });
                     ui.horizontal(|ui| {
                         ui.label(format!("{} ->", t!("tessela_size")));

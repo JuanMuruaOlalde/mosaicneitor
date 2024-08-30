@@ -16,8 +16,8 @@ pub fn default_working_folder() -> PathBuf {
     // A list of available folders is in: https://docs.rs/dirs/latest/dirs/#functions
 }
 
-pub const DEFAULT_OVERAL_MOSAIC_DIMENSIONS_HORIZONTAL_MM: i32 = 600;
-pub const DEFAULT_OVERAL_MOSAIC_DIMENSIONS_VERTICAL_MM: i32 = 400;
+pub const DEFAULT_OVERAL_MOSAIC_DIMENSIONS_HORIZONTAL_MM: i32 = 200;
+pub const DEFAULT_OVERAL_MOSAIC_DIMENSIONS_VERTICAL_MM: i32 = 100;
 pub const DEFAULT_BASE_TESSELA_SIZE_SIDE1_MM: i32 = 10;
 pub const DEFAULT_BASE_TESSELA_SIZE_SIDE2_MM: i32 = 10;
 

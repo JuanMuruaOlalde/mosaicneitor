@@ -1,6 +1,7 @@
 {
     "_version": 1,
-    "button_choose_image": "Choose image",
+    "btn_choose_image": "Choose image",
+    "btn_adjust_mosaic_to_image": "Adjust mosaic to image",
     "mosaic_size": "Mosaic size",
     "horizontal": "horizontal",
     "vertical": "vertical",

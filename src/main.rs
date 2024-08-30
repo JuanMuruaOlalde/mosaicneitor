@@ -4,6 +4,7 @@ i18n!("locales", fallback = "en");
 
 mod config;
 mod user_interface;
+mod utils;
 fn main() -> eframe::Result<()> {
     user_interface::lauch_user_interface()
 }
