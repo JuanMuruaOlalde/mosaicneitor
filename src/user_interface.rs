@@ -1,11 +1,10 @@
-use eframe::egui::{self, TextureOptions};
+use eframe::egui;
 use egui_file_dialog::FileDialog;
 
 use crate::{config, utils};
 
 pub fn lauch_user_interface() -> eframe::Result<()> {
     rust_i18n::set_locale(crate::config::WORKING_LOCALE);
-    // where to call  egui_extras::install_image_loaders(ctx);  ???
     let options_for_eframe = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size(crate::config::default_viewport_dimensions())
@@ -15,7 +14,10 @@ pub fn lauch_user_interface() -> eframe::Result<()> {
     eframe::run_native(
         MosaicneitorApp::name(),
         options_for_eframe,
-        Box::new(|ctx| Ok(Box::new(MosaicneitorApp::new(ctx)))),
+        Box::new(|ctx| {
+            egui_extras::install_image_loaders(&ctx.egui_ctx);
+            Ok(Box::new(MosaicneitorApp::new(ctx)))
+        }),
     )
 }
 
@@ -39,6 +41,10 @@ impl MosaicneitorApp {
                 .add_file_filter(
                     "PNG",
                     std::sync::Arc::new(|path| path.extension().unwrap_or_default() == "png"),
+                )
+                .add_file_filter(
+                    "JPEG",
+                    std::sync::Arc::new(|path| path.extension().unwrap_or_default() == "jpg"),
                 )
                 .default_file_filter("PNG"),
             selected_file: None,
@@ -81,24 +87,51 @@ impl MosaicneitorApp {
         }
     }
 
-    fn adjust_dimensions_to_image_proportions(&mut self) {
+    fn get_image_dimensions(&self) -> [usize; 2] {
+        match &self.image {
+            Some(img) => img.size,
+            None => [1, 1],
+        }
+    }
+
+    fn adjust_mosaic_dimensions_to_image_proportions(&mut self) {
         let image_dimensions = match &self.image {
             Some(img) => [img.size[0], img.size[1]],
             None => [1, 1],
         };
-        let dimensions = [
-            match &self.dimensions_horizontal.parse::<usize>() {
-                Ok(x) => *x,
-                Err(_error) => 1,
-            },
-            match &self.dimensions_vertical.parse::<usize>() {
-                Ok(x) => *x,
-                Err(_error) => 1,
-            },
-        ];
-        let ajusted_dimensions = utils::round_to_the_nearest_tens(dimensions, image_dimensions);
+        let dimensions = self.get_mosaic_dimensions();
+        let ajusted_dimensions = utils::adjust_proportions(
+            [dimensions.x as usize, dimensions.y as usize],
+            image_dimensions,
+        );
         self.dimensions_horizontal = ajusted_dimensions[0].to_string();
         self.dimensions_vertical = ajusted_dimensions[1].to_string();
+    }
+
+    fn get_mosaic_dimensions(&self) -> egui::Vec2 {
+        egui::Vec2::new(
+            match &self.dimensions_horizontal.parse::<f32>() {
+                Ok(x) => *x,
+                Err(_error) => 1.0,
+            },
+            match &self.dimensions_vertical.parse::<f32>() {
+                Ok(x) => *x,
+                Err(_error) => 1.0,
+            },
+        )
+    }
+
+    fn get_tessela_size(&self) -> egui::Vec2 {
+        egui::Vec2::new(
+            match &self.size_side_a.parse::<f32>() {
+                Ok(x) => *x,
+                Err(_error) => 1.0,
+            },
+            match &self.size_side_b.parse::<f32>() {
+                Ok(x) => *x,
+                Err(_error) => 1.0,
+            },
+        )
     }
 }
 
@@ -114,14 +147,11 @@ impl eframe::App for MosaicneitorApp {
             if let Some(path) = self.file_dialog.take_selected() {
                 self.selected_file = Some(path.to_path_buf());
                 self.load_image_from_selected_file();
-                self.adjust_dimensions_to_image_proportions();
+                self.adjust_mosaic_dimensions_to_image_proportions();
             }
             match &self.selected_file {
                 Some(x) => {
-                    let image_dimensions = match &self.image {
-                        Some(img) => [img.size[0], img.size[1]],
-                        None => [1, 1],
-                    };
+                    let image_dimensions = self.get_image_dimensions();
                     ui.label(format!(
                         "{} ({}x{})(px)",
                         x.as_path().display(),
@@ -141,7 +171,7 @@ impl eframe::App for MosaicneitorApp {
                                 .desired_width(75.0),
                         );
                         if ui.button(t!("btn_adjust_mosaic_to_image")).clicked() {
-                            self.adjust_dimensions_to_image_proportions();
+                            self.adjust_mosaic_dimensions_to_image_proportions();
                         }
                     });
                     ui.horizontal(|ui| {
@@ -161,32 +191,86 @@ impl eframe::App for MosaicneitorApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            egui::ScrollArea::both().show(ui, |ui| {
-                match &self.image {
-                    Some(img) => {
-                        let handle = ctx.load_texture(
-                            "image-to-display",
-                            egui::ImageData::from(img.clone()),
-                            TextureOptions::default(),
-                        );
-                        let sized_texture = egui::load::SizedTexture::new(
-                            handle.id(),
-                            egui::vec2(
-                                match &self.dimensions_horizontal.parse::<f32>() {
-                                    Ok(x) => *x,
-                                    Err(_error) => 1.0,
-                                },
-                                match &self.dimensions_vertical.parse::<f32>() {
-                                    Ok(x) => *x,
-                                    Err(_error) => 1.0,
-                                },
-                            ),
-                        );
-                        ui.image(sized_texture);
+            egui::ScrollArea::both().show(ui, |ui| match &self.image {
+                None => (),
+                Some(img) => {
+                    let display_size = self.get_mosaic_dimensions();
+                    let start_position = ui.next_widget_position();
+                    let end_position = eframe::egui::pos2(
+                        start_position.x + display_size.x,
+                        start_position.y + display_size.y,
+                    );
+                    let handle = ctx.load_texture(
+                        "image-to-display",
+                        egui::ImageData::from(img.clone()),
+                        egui::TextureOptions::default(),
+                    );
+                    let (_response, painter) =
+                        ui.allocate_painter(display_size, egui::Sense::hover());
+                    painter.image(
+                        handle.id(),
+                        egui::Rect::from_min_max(start_position, end_position),
+                        egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
+                        egui::Color32::WHITE,
+                    );
+                    let grid_cell_size = self.get_tessela_size();
+                    let grid = create_grid(
+                        start_position,
+                        end_position,
+                        grid_cell_size,
+                        1.0,
+                        egui::Color32::GREEN,
+                    );
+                    for line_segment in grid {
+                        painter.add(line_segment.clone());
                     }
-                    None => (),
-                };
+                }
             });
         });
     }
+}
+
+fn create_grid(
+    start_position: eframe::egui::Pos2,
+    end_position: eframe::egui::Pos2,
+    grid_cell_size: egui::Vec2,
+    stroke_width: f32,
+    stroke_color: egui::Color32,
+) -> Vec<egui::epaint::Shape> {
+    let mut grid = Vec::new();
+    // vertical lines
+    let mut step_x = 0.0;
+    while step_x < end_position.x + grid_cell_size.x {
+        let start_point = egui::Pos2 {
+            x: start_position.x + step_x,
+            y: start_position.y,
+        };
+        let end_point = egui::Pos2 {
+            x: start_position.x + step_x,
+            y: end_position.y,
+        };
+        grid.push(egui::epaint::Shape::LineSegment {
+            points: [start_point, end_point],
+            stroke: egui::epaint::PathStroke::new(stroke_width, stroke_color),
+        });
+        step_x += grid_cell_size.x;
+    }
+    // horizontal lines
+    let mut step_y = 0.0;
+    while step_y < end_position.y + grid_cell_size.y {
+        let start_point = egui::Pos2 {
+            x: start_position.x,
+            y: start_position.y + step_y,
+        };
+        let end_point = egui::Pos2 {
+            x: end_position.x,
+            y: start_position.y + step_y,
+        };
+        grid.push(egui::epaint::Shape::LineSegment {
+            points: [start_point, end_point],
+            stroke: egui::epaint::PathStroke::new(stroke_width, stroke_color),
+        });
+        step_y += grid_cell_size.y;
+    }
+    grid
 }

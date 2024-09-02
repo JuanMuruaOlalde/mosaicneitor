@@ -2,13 +2,6 @@
 
 ----
 
-Load a PNG image and place a grid on top of it.
-
-- choose mosaic dimensions, for the image
-- choose basic (square) tessera dimensions, for the grid.
-
-----
-
 Zoom the display
 
 ----
