@@ -1,7 +1,7 @@
 {
     "_version": 1,
     "btn_choose_image": "Choose image",
-    "btn_adjust_mosaic_to_image": "Adjust mosaic to image",
+    "btn_adjust_mosaic_to_image": "Adjust mosaic to image aspect ratio",
     "mosaic_size": "Mosaic size",
     "horizontal": "horizontal",
     "vertical": "vertical",

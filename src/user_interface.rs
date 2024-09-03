@@ -95,31 +95,29 @@ impl MosaicneitorApp {
         }
     }
 
-    fn adjust_mosaic_dimensions_to_image_proportions(&mut self) {
+    fn adjust_mosaic_dimensions_to_image_aspect_ratio(&mut self) {
         let image_dimensions = match &self.image {
             Some(img) => [img.size[0], img.size[1]],
             None => [1, 1],
         };
-        let dimensions = self.get_mosaic_dimensions();
-        let ajusted_dimensions = utils::adjust_proportions(
-            [dimensions.x as usize, dimensions.y as usize],
-            image_dimensions,
-        );
-        self.dimensions_horizontal = ajusted_dimensions[0].to_string();
-        self.dimensions_vertical = ajusted_dimensions[1].to_string();
+        let original_dimensions = self.get_mosaic_dimensions();
+        let adjusted_dimensions =
+            utils::round_preserving_aspect_ratio(original_dimensions, image_dimensions);
+        self.dimensions_horizontal = adjusted_dimensions[0].to_string();
+        self.dimensions_vertical = adjusted_dimensions[1].to_string();
     }
 
-    fn get_mosaic_dimensions(&self) -> egui::Vec2 {
-        egui::Vec2::new(
+    fn get_mosaic_dimensions(&self) -> [usize; 2] {
+        [
             match &self.dimensions_horizontal.parse::<f32>() {
-                Ok(x) => *x,
-                Err(_error) => 1.0,
+                Ok(x) => *x as usize,
+                Err(_error) => 1,
             },
             match &self.dimensions_vertical.parse::<f32>() {
-                Ok(x) => *x,
-                Err(_error) => 1.0,
+                Ok(x) => *x as usize,
+                Err(_error) => 1,
             },
-        )
+        ]
     }
 
     fn get_tessela_size(&self) -> egui::Vec2 {
@@ -148,7 +146,7 @@ impl eframe::App for MosaicneitorApp {
             if let Some(path) = self.file_dialog.take_selected() {
                 self.selected_file = Some(path.to_path_buf());
                 self.load_image_from_selected_file();
-                self.adjust_mosaic_dimensions_to_image_proportions();
+                self.adjust_mosaic_dimensions_to_image_aspect_ratio();
             }
             match &self.selected_file {
                 Some(x) => {
@@ -172,7 +170,7 @@ impl eframe::App for MosaicneitorApp {
                                 .desired_width(75.0),
                         );
                         if ui.button(t!("btn_adjust_mosaic_to_image")).clicked() {
-                            self.adjust_mosaic_dimensions_to_image_proportions();
+                            self.adjust_mosaic_dimensions_to_image_aspect_ratio();
                         }
                     });
                     ui.horizontal(|ui| {
@@ -195,7 +193,9 @@ impl eframe::App for MosaicneitorApp {
             egui::ScrollArea::both().show(ui, |ui| match &self.image {
                 None => (),
                 Some(img) => {
-                    let display_size = self.get_mosaic_dimensions();
+                    let mosaic_dimensions = self.get_mosaic_dimensions();
+                    let display_size =
+                        egui::Vec2::new(mosaic_dimensions[0] as f32, mosaic_dimensions[1] as f32);
                     let start_position = ui.next_widget_position();
                     let end_position = eframe::egui::pos2(
                         start_position.x + display_size.x,
@@ -222,9 +222,7 @@ impl eframe::App for MosaicneitorApp {
                         1.0,
                         egui::Color32::GREEN,
                     );
-                    for line_segment in grid {
-                        painter.add(line_segment.clone());
-                    }
+                    painter.extend(grid);
                 }
             });
         });
@@ -241,7 +239,7 @@ fn create_grid(
     let mut grid = Vec::new();
     // vertical lines
     let mut step_x = 0.0;
-    while step_x < end_position.x + grid_cell_size.x {
+    while step_x < end_position.x + 1.0 {
         let start_point = egui::Pos2 {
             x: start_position.x + step_x,
             y: start_position.y,
@@ -258,7 +256,7 @@ fn create_grid(
     }
     // horizontal lines
     let mut step_y = 0.0;
-    while step_y < end_position.y + grid_cell_size.y {
+    while step_y < end_position.y + 1.0 {
         let start_point = egui::Pos2 {
             x: start_position.x,
             y: start_position.y + step_y,

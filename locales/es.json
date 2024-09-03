@@ -1,7 +1,7 @@
 {
     "_version": 1,
     "btn_choose_image": "Elegir imagen",
-    "btn_adjust_mosaic_to_image": "Ajustar mosaico a la imagen",
+    "btn_adjust_mosaic_to_image": "Ajustar proporciones del mosaico a las de la imagen",
     "mosaic_size": "Tamaño del mosaico",
     "horizontal": "en horizontal",
     "vertical": "en vertical",
