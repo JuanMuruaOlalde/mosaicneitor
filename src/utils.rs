@@ -12,8 +12,11 @@ pub fn get_version_text() -> String {
                 format!("(v{}.{})", version.major, version.minor)
             } else {
                 format!(
-                    "(v{}.{}.forTest{})",
-                    version.major, version.minor, version.patch
+                    "(v{}.{}.{}-{}-)",
+                    version.major,
+                    version.minor,
+                    t!("previewToTryAndProvideFeedback"),
+                    version.patch
                 )
             }
         }

@@ -7,5 +7,6 @@
     "vertical": "vertical",
     "tessela_size": "Base size for tessela",
     "A_side": "A-side",
-    "B_side": "B-side"
+    "B_side": "B-side",
+    "previewToTryAndProvideFeedback": "previewToTryAndProvideFeedback"
 }
