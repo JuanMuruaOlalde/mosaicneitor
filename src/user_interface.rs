@@ -11,8 +11,9 @@ pub fn lauch_user_interface() -> eframe::Result<()> {
             .with_icon(egui::IconData::default()),
         ..eframe::NativeOptions::default()
     };
+    let title = format!("{} {}", MosaicneitorApp::name(), utils::get_version_text());
     eframe::run_native(
-        MosaicneitorApp::name(),
+        &title,
         options_for_eframe,
         Box::new(|ctx| {
             egui_extras::install_image_loaders(&ctx.egui_ctx);
@@ -46,7 +47,7 @@ impl MosaicneitorApp {
                     "JPEG",
                     std::sync::Arc::new(|path| path.extension().unwrap_or_default() == "jpg"),
                 )
-                .default_file_filter("PNG"),
+                .default_file_filter("JPEG"),
             selected_file: None,
             image: None,
             dimensions_horizontal: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_HORIZONTAL_MM
