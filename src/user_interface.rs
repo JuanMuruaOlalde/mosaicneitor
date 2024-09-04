@@ -1,4 +1,4 @@
-use eframe::egui;
+use eframe::egui::{self, Rect};
 use egui_file_dialog::FileDialog;
 
 use crate::{config, utils};
@@ -30,6 +30,16 @@ struct MosaicneitorApp {
     dimensions_vertical: String,
     size_side_a: String,
     size_side_b: String,
+    zoom_factor: Zoom,
+}
+
+#[derive(Debug, PartialEq)]
+enum Zoom {
+    X1,
+    X2,
+    X3,
+    X4,
+    X5,
 }
 
 impl MosaicneitorApp {
@@ -55,6 +65,7 @@ impl MosaicneitorApp {
             dimensions_vertical: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_VERTICAL_MM.to_string(),
             size_side_a: config::DEFAULT_BASE_TESSELA_SIZE_SIDE1_MM.to_string(),
             size_side_b: config::DEFAULT_BASE_TESSELA_SIZE_SIDE2_MM.to_string(),
+            zoom_factor: Zoom::X1,
         }
     }
     fn name() -> &'static str {
@@ -109,28 +120,38 @@ impl MosaicneitorApp {
 
     fn get_mosaic_dimensions(&self) -> [usize; 2] {
         [
-            match &self.dimensions_horizontal.parse::<f32>() {
-                Ok(x) => *x as usize,
+            match self.dimensions_horizontal.parse::<usize>() {
+                Ok(x) => x * self.get_zoom_factor(),
                 Err(_error) => 1,
             },
-            match &self.dimensions_vertical.parse::<f32>() {
-                Ok(x) => *x as usize,
+            match self.dimensions_vertical.parse::<usize>() {
+                Ok(x) => x * self.get_zoom_factor(),
                 Err(_error) => 1,
             },
         ]
     }
 
-    fn get_tessela_size(&self) -> egui::Vec2 {
-        egui::Vec2::new(
-            match &self.size_side_a.parse::<f32>() {
-                Ok(x) => *x,
-                Err(_error) => 1.0,
+    fn get_tessela_size(&self) -> [usize; 2] {
+        [
+            match self.size_side_a.parse::<usize>() {
+                Ok(x) => x * self.get_zoom_factor(),
+                Err(_error) => 1,
             },
-            match &self.size_side_b.parse::<f32>() {
-                Ok(x) => *x,
-                Err(_error) => 1.0,
+            match self.size_side_b.parse::<usize>() {
+                Ok(x) => x * self.get_zoom_factor(),
+                Err(_error) => 1,
             },
-        )
+        ]
+    }
+
+    fn get_zoom_factor(&self) -> usize {
+        match self.zoom_factor {
+            Zoom::X1 => 1,
+            Zoom::X2 => 2,
+            Zoom::X3 => 3,
+            Zoom::X4 => 4,
+            Zoom::X5 => 5,
+        }
     }
 }
 
@@ -184,6 +205,14 @@ impl eframe::App for MosaicneitorApp {
                             egui::TextEdit::singleline(&mut self.size_side_b).desired_width(75.0),
                         );
                     });
+                    ui.horizontal(|ui| {
+                        ui.label("Zoom: ");
+                        ui.selectable_value(&mut self.zoom_factor, Zoom::X1, "x1");
+                        ui.selectable_value(&mut self.zoom_factor, Zoom::X2, "x2");
+                        ui.selectable_value(&mut self.zoom_factor, Zoom::X3, "x3");
+                        ui.selectable_value(&mut self.zoom_factor, Zoom::X4, "x4");
+                        ui.selectable_value(&mut self.zoom_factor, Zoom::X5, "x5");
+                    });
                 }
                 None => (),
             }
@@ -214,7 +243,9 @@ impl eframe::App for MosaicneitorApp {
                         egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
                         egui::Color32::WHITE,
                     );
-                    let grid_cell_size = self.get_tessela_size();
+                    let tessela_size = self.get_tessela_size();
+                    let grid_cell_size =
+                        egui::Vec2::new(tessela_size[0] as f32, tessela_size[1] as f32);
                     let grid = create_grid(
                         start_position,
                         end_position,
@@ -237,39 +268,33 @@ fn create_grid(
     stroke_color: egui::Color32,
 ) -> Vec<egui::epaint::Shape> {
     let mut grid = Vec::new();
-    // vertical lines
-    let mut step_x = 0.0;
-    while step_x < end_position.x + 1.0 {
-        let start_point = egui::Pos2 {
-            x: start_position.x + step_x,
-            y: start_position.y,
-        };
-        let end_point = egui::Pos2 {
-            x: start_position.x + step_x,
-            y: end_position.y,
-        };
-        grid.push(egui::epaint::Shape::LineSegment {
-            points: [start_point, end_point],
-            stroke: egui::epaint::PathStroke::new(stroke_width, stroke_color),
-        });
-        step_x += grid_cell_size.x;
-    }
-    // horizontal lines
-    let mut step_y = 0.0;
-    while step_y < end_position.y + 1.0 {
-        let start_point = egui::Pos2 {
-            x: start_position.x,
-            y: start_position.y + step_y,
-        };
-        let end_point = egui::Pos2 {
-            x: end_position.x,
-            y: start_position.y + step_y,
-        };
-        grid.push(egui::epaint::Shape::LineSegment {
-            points: [start_point, end_point],
-            stroke: egui::epaint::PathStroke::new(stroke_width, stroke_color),
-        });
-        step_y += grid_cell_size.y;
+    let mut tessela_origin_x = start_position.x;
+    while tessela_origin_x < end_position.x {
+        let mut tessela_origin_y = start_position.y;
+        while tessela_origin_y < end_position.y {
+            let start_point = egui::Pos2 {
+                x: tessela_origin_x + 1.0,
+                y: tessela_origin_y + 1.0,
+            };
+            let end_point = egui::Pos2 {
+                x: tessela_origin_x + grid_cell_size.x - 1.0,
+                y: tessela_origin_y + grid_cell_size.y - 1.0,
+            };
+            grid.push(egui::epaint::Shape::Rect(egui::epaint::RectShape {
+                rect: Rect {
+                    min: start_point,
+                    max: end_point,
+                },
+                rounding: eframe::egui::Rounding::ZERO,
+                fill: egui::Color32::TRANSPARENT,
+                stroke: egui::epaint::Stroke::new(stroke_width, stroke_color),
+                blur_width: 0.0,
+                fill_texture_id: egui::TextureId::default(),
+                uv: egui::Rect::ZERO,
+            }));
+            tessela_origin_y += grid_cell_size.y;
+        }
+        tessela_origin_x += grid_cell_size.x;
     }
     grid
 }
