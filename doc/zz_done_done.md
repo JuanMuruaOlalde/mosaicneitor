@@ -2,7 +2,11 @@
 
 ----
 
-Load a PNG image and place a grid on top of it.
+Zoom the display
+
+----
+
+Load a image and place a grid on top of it.
 
 - choose mosaic dimensions, for the image
 - choose basic (square) tessera dimensions, for the grid.
@@ -15,15 +19,20 @@ Load JPEG images also.
 
 ----
 
-Initial mosaic dimensions (in mm) equal to image dimensions (in pixels), rounded to the upper nearest tens. 
+Adjust mosaic dimensions to image aspect ratio.
 
-Interesting to be able to do this kind of matching between image and mosaic dimensions. Whatever mosaic dimension the user put on the interface, round it to the upper nearest hundred; to match proportion to the one between the image dimensions.
+- Mosaic dimensions in mm, image dimensions in pixels.
 
-But also is interesting to permit arbitrary mosaic dimensions (distorted repesentation) if the user chooses to do that.
+- Maintain horizontal dimension and adjust the vertical one.
+
+- Round mosaic dimensions to the upper nearest tens. 
+
+
+
+But also permit arbitrary mosaic dimensions (distorted repesentation) if the user chooses to do that.
 
 ----
 
-Pan the display
+Load a PNG image and show it
 
-----
 ----

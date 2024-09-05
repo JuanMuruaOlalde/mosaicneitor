@@ -226,17 +226,17 @@ impl eframe::App for MosaicneitorApp {
                     let display_size =
                         egui::Vec2::new(mosaic_dimensions[0] as f32, mosaic_dimensions[1] as f32);
                     let start_position = ui.next_widget_position();
-                    let end_position = eframe::egui::pos2(
-                        start_position.x + display_size.x,
-                        start_position.y + display_size.y,
-                    );
+                    let end_position = egui::Pos2 {
+                        x: start_position.x + display_size.x,
+                        y: start_position.y + display_size.y,
+                    };
                     let handle = ctx.load_texture(
                         "image-to-display",
                         egui::ImageData::from(img.clone()),
                         egui::TextureOptions::default(),
                     );
                     let (_response, painter) =
-                        ui.allocate_painter(display_size, egui::Sense::hover());
+                        ui.allocate_painter(display_size, egui::Sense::drag());
                     painter.image(
                         handle.id(),
                         egui::Rect::from_min_max(start_position, end_position),
@@ -244,12 +244,10 @@ impl eframe::App for MosaicneitorApp {
                         egui::Color32::WHITE,
                     );
                     let tessela_size = self.get_tessela_size();
-                    let grid_cell_size =
-                        egui::Vec2::new(tessela_size[0] as f32, tessela_size[1] as f32);
                     let grid = create_grid(
                         start_position,
                         end_position,
-                        grid_cell_size,
+                        tessela_size,
                         1.0,
                         egui::Color32::GREEN,
                     );
@@ -261,24 +259,26 @@ impl eframe::App for MosaicneitorApp {
 }
 
 fn create_grid(
-    start_position: eframe::egui::Pos2,
-    end_position: eframe::egui::Pos2,
-    grid_cell_size: egui::Vec2,
+    start_position: egui::Pos2,
+    end_position: egui::Pos2,
+    tessela_size: [usize; 2],
     stroke_width: f32,
     stroke_color: egui::Color32,
 ) -> Vec<egui::epaint::Shape> {
     let mut grid = Vec::new();
-    let mut tessela_origin_x = start_position.x;
-    while tessela_origin_x < end_position.x {
-        let mut tessela_origin_y = start_position.y;
-        while tessela_origin_y < end_position.y {
+    for tessela_origin_x in
+        ((start_position.x as usize)..(end_position.x as usize)).step_by(tessela_size[0] + 2)
+    {
+        for tessela_origin_y in
+            ((start_position.y as usize)..(end_position.y as usize)).step_by(tessela_size[1] + 2)
+        {
             let start_point = egui::Pos2 {
-                x: tessela_origin_x + 1.0,
-                y: tessela_origin_y + 1.0,
+                x: (tessela_origin_x + 1) as f32,
+                y: (tessela_origin_y + 1) as f32,
             };
             let end_point = egui::Pos2 {
-                x: tessela_origin_x + grid_cell_size.x - 1.0,
-                y: tessela_origin_y + grid_cell_size.y - 1.0,
+                x: (tessela_origin_x + 1 + tessela_size[0]) as f32,
+                y: (tessela_origin_y + 1 + tessela_size[1]) as f32,
             };
             grid.push(egui::epaint::Shape::Rect(egui::epaint::RectShape {
                 rect: Rect {
@@ -292,9 +292,7 @@ fn create_grid(
                 fill_texture_id: egui::TextureId::default(),
                 uv: egui::Rect::ZERO,
             }));
-            tessela_origin_y += grid_cell_size.y;
         }
-        tessela_origin_x += grid_cell_size.x;
     }
     grid
 }

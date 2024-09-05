@@ -2,7 +2,7 @@
 
 Plan the building of a mosaic. 
 
-Starting with a image:
+For that, starting with a image for background reference:
 
 - Try several overal mosaic dimensions and tessela dimensions. To (roughly) settle basic proportions and detailing capacity.
 
