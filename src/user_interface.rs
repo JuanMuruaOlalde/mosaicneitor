@@ -63,11 +63,12 @@ impl MosaicneitorApp {
             dimensions_horizontal: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_HORIZONTAL_MM
                 .to_string(),
             dimensions_vertical: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_VERTICAL_MM.to_string(),
-            size_side_a: config::DEFAULT_BASE_TESSELA_SIZE_SIDE1_MM.to_string(),
-            size_side_b: config::DEFAULT_BASE_TESSELA_SIZE_SIDE2_MM.to_string(),
+            size_side_a: config::DEFAULT_BASE_TESSELA_SIZE_HORIZONTAL_MM.to_string(),
+            size_side_b: config::DEFAULT_BASE_TESSELA_SIZE_VERTICAL_MM.to_string(),
             zoom_factor: Zoom::X1,
         }
     }
+
     fn name() -> &'static str {
         "Mosaicneitor"
     }
@@ -230,13 +231,13 @@ impl eframe::App for MosaicneitorApp {
                         x: start_position.x + display_size.x,
                         y: start_position.y + display_size.y,
                     };
+                    let (_response, painter) =
+                        ui.allocate_painter(display_size, egui::Sense::hover());
                     let handle = ctx.load_texture(
                         "image-to-display",
                         egui::ImageData::from(img.clone()),
                         egui::TextureOptions::default(),
                     );
-                    let (_response, painter) =
-                        ui.allocate_painter(display_size, egui::Sense::drag());
                     painter.image(
                         handle.id(),
                         egui::Rect::from_min_max(start_position, end_position),
@@ -244,41 +245,44 @@ impl eframe::App for MosaicneitorApp {
                         egui::Color32::WHITE,
                     );
                     let tessela_size = self.get_tessela_size();
-                    let grid = create_grid(
+                    let gap_between_tesselae = 1 * self.get_zoom_factor();
+                    let grid_to_render = generate_grid(
                         start_position,
                         end_position,
                         tessela_size,
-                        1.0,
-                        egui::Color32::GREEN,
+                        gap_between_tesselae,
+                        ui,
                     );
-                    painter.extend(grid);
+                    painter.extend(grid_to_render);
                 }
             });
         });
     }
 }
 
-fn create_grid(
+fn generate_grid(
     start_position: egui::Pos2,
     end_position: egui::Pos2,
     tessela_size: [usize; 2],
-    stroke_width: f32,
-    stroke_color: egui::Color32,
+    gap_between_tesselae: usize,
+    ui: &mut egui::Ui,
 ) -> Vec<egui::epaint::Shape> {
     let mut grid = Vec::new();
-    for tessela_origin_x in
-        ((start_position.x as usize)..(end_position.x as usize)).step_by(tessela_size[0] + 2)
+    let stroke_width = 1.0;
+    let stroke_color = egui::Color32::GREEN;
+    for tessela_origin_x in ((start_position.x as usize)..(end_position.x as usize))
+        .step_by(tessela_size[0] + gap_between_tesselae * 2)
     {
-        for tessela_origin_y in
-            ((start_position.y as usize)..(end_position.y as usize)).step_by(tessela_size[1] + 2)
+        for tessela_origin_y in ((start_position.y as usize)..(end_position.y as usize))
+            .step_by(tessela_size[1] + gap_between_tesselae * 2)
         {
             let start_point = egui::Pos2 {
-                x: (tessela_origin_x + 1) as f32,
-                y: (tessela_origin_y + 1) as f32,
+                x: (tessela_origin_x + gap_between_tesselae) as f32,
+                y: (tessela_origin_y + gap_between_tesselae) as f32,
             };
             let end_point = egui::Pos2 {
-                x: (tessela_origin_x + 1 + tessela_size[0]) as f32,
-                y: (tessela_origin_y + 1 + tessela_size[1]) as f32,
+                x: (tessela_origin_x + gap_between_tesselae + tessela_size[0]) as f32,
+                y: (tessela_origin_y + gap_between_tesselae + tessela_size[1]) as f32,
             };
             grid.push(egui::epaint::Shape::Rect(egui::epaint::RectShape {
                 rect: Rect {
