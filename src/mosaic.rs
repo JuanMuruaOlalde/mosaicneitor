@@ -2,14 +2,14 @@ use crate::config;
 
 pub struct Mosaic {
     tessela_base_size: SizeInMm,
-    how_many_columns: u16,
-    how_many_rows: u16,
+    how_many_columns: usize,
+    how_many_rows: usize,
     grid: Vec<Vec<Tessela>>,
 }
 
 pub struct SizeInMm {
-    horizontal: u16,
-    vertical: u16,
+    horizontal: usize,
+    vertical: usize,
 }
 
 pub struct Tessela {
@@ -18,7 +18,7 @@ pub struct Tessela {
 }
 
 impl Mosaic {
-    pub fn new(how_many_columns: u16, how_many_rows: u16) -> Self {
+    pub fn new(how_many_columns: usize, how_many_rows: usize) -> Self {
         Self {
             tessela_base_size: SizeInMm {
                 horizontal: config::DEFAULT_BASE_TESSELA_SIZE_HORIZONTAL_MM,
