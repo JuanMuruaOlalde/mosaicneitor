@@ -2,6 +2,12 @@
 
 ----
 
+Allow display to jump between two modes:
+- show image, and tesserae on top of it.
+- show only tesserae, without the underline image.
+
+----
+
 Zoom the display
 
 ----

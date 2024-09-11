@@ -45,6 +45,7 @@ impl eframe::App for MosaicneitorApp {
                         image_dimensions[0],
                         image_dimensions[1],
                     ));
+                    ui.separator();
                     ui.horizontal(|ui| {
                         ui.label(format!("{} ->", t!("mosaic_size")));
                         ui.label(format!("{} (mm):", t!("horizontal")));
@@ -72,7 +73,12 @@ impl eframe::App for MosaicneitorApp {
                             egui::TextEdit::singleline(&mut self.size_side_b).desired_width(75.0),
                         );
                     });
+                    ui.separator();
                     ui.horizontal(|ui| {
+                        ui.label(format!("{}: ", t!("Show")));
+                        ui.checkbox(&mut self.show_image, t!("Image"));
+                        ui.checkbox(&mut self.show_tesselae, t!("Tesselae"));
+                        ui.add_space(45.0);
                         ui.label("Zoom: ");
                         ui.selectable_value(&mut self.zoom_level, Zoom::X1, "x1");
                         ui.selectable_value(&mut self.zoom_level, Zoom::X2, "x2");
@@ -101,26 +107,33 @@ impl eframe::App for MosaicneitorApp {
                         };
                         let (_response, painter) =
                             ui.allocate_painter(display_size, egui::Sense::hover());
-                        let handle = ctx.load_texture(
-                            "image-to-display",
-                            egui::ImageData::from(img.clone()),
-                            egui::TextureOptions::default(),
-                        );
-                        painter.image(
-                            handle.id(),
-                            egui::Rect::from_min_max(start_position, end_position),
-                            egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0)),
-                            egui::Color32::WHITE,
-                        );
-                        let tessela_size = self.get_tessela_size();
-                        let gap_between_tesselae = 1 * self.get_zoom_factor();
-                        let tesselae_grid = generate_shapes_to_paint_tesselae_grid(
-                            start_position,
-                            end_position,
-                            tessela_size,
-                            gap_between_tesselae,
-                        );
-                        painter.extend(tesselae_grid);
+                        if self.show_image {
+                            let handle = ctx.load_texture(
+                                "image-to-display",
+                                egui::ImageData::from(img.clone()),
+                                egui::TextureOptions::default(),
+                            );
+                            painter.image(
+                                handle.id(),
+                                egui::Rect::from_min_max(start_position, end_position),
+                                egui::Rect::from_min_max(
+                                    egui::pos2(0.0, 0.0),
+                                    egui::pos2(1.0, 1.0),
+                                ),
+                                egui::Color32::WHITE,
+                            );
+                        };
+                        if self.show_tesselae {
+                            let tessela_size = self.get_tessela_size();
+                            let gap_between_tesselae = 1 * self.get_zoom_factor();
+                            let tesselae_grid = generate_shapes_to_paint_tesselae_grid(
+                                start_position,
+                                end_position,
+                                tessela_size,
+                                gap_between_tesselae,
+                            );
+                            painter.extend(tesselae_grid);
+                        };
                     }
                 };
             });
@@ -137,6 +150,8 @@ struct MosaicneitorApp {
     size_side_a: String,
     size_side_b: String,
     zoom_level: Zoom,
+    show_image: bool,
+    show_tesselae: bool,
 }
 
 #[derive(Debug, PartialEq)]
@@ -176,6 +191,8 @@ impl MosaicneitorApp {
             size_side_a: config::DEFAULT_BASE_TESSELA_SIZE_HORIZONTAL_MM.to_string(),
             size_side_b: config::DEFAULT_BASE_TESSELA_SIZE_VERTICAL_MM.to_string(),
             zoom_level: Zoom::X1,
+            show_image: true,
+            show_tesselae: true,
         }
     }
 

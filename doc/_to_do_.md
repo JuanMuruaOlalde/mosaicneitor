@@ -6,12 +6,6 @@ Pan (scroll) the display if it doesn't fit on the window.
 
 ----
 
-Allow display to jump between two modes:
-- show image, and tesserae on top of it.
-- show only tesserae, without the underline image.
-
-----
-
 Pick and change color, for any given tessera. 
 
 Start assigning each tessera the general background color on the image under it ?
