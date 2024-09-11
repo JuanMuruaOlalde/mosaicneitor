@@ -141,6 +141,46 @@ impl eframe::App for MosaicneitorApp {
     }
 }
 
+fn generate_shapes_to_paint_tesselae_grid(
+    start_position: egui::Pos2,
+    end_position: egui::Pos2,
+    tessela_size: [usize; 2],
+    gap_between_tesselae: usize,
+) -> Vec<egui::epaint::Shape> {
+    let mut shapes = Vec::new();
+    let stroke_width = 1.0;
+    let stroke_color = egui::Color32::GREEN;
+    for tessela_origin_x in ((start_position.x as usize)..(end_position.x as usize))
+        .step_by(tessela_size[0] + gap_between_tesselae * 2)
+    {
+        for tessela_origin_y in ((start_position.y as usize)..(end_position.y as usize))
+            .step_by(tessela_size[1] + gap_between_tesselae * 2)
+        {
+            let start_point = egui::Pos2 {
+                x: (tessela_origin_x + gap_between_tesselae) as f32,
+                y: (tessela_origin_y + gap_between_tesselae) as f32,
+            };
+            let end_point = egui::Pos2 {
+                x: (tessela_origin_x + gap_between_tesselae + tessela_size[0]) as f32,
+                y: (tessela_origin_y + gap_between_tesselae + tessela_size[1]) as f32,
+            };
+            shapes.push(egui::epaint::Shape::Rect(egui::epaint::RectShape {
+                rect: egui::Rect {
+                    min: start_point,
+                    max: end_point,
+                },
+                rounding: eframe::egui::Rounding::ZERO,
+                fill: egui::Color32::TRANSPARENT,
+                stroke: egui::epaint::Stroke::new(stroke_width, stroke_color),
+                blur_width: 0.0,
+                fill_texture_id: egui::TextureId::default(),
+                uv: egui::Rect::ZERO,
+            }));
+        }
+    }
+    shapes
+}
+
 struct MosaicneitorApp {
     file_dialog: FileDialog,
     selected_file: Option<std::path::PathBuf>,
@@ -163,12 +203,8 @@ enum Zoom {
     X5,
 }
 
-impl MosaicneitorApp {
-    fn name() -> &'static str {
-        "Mosaicneitor"
-    }
-
-    fn new(_cc: &eframe::CreationContext) -> Self {
+impl Default for MosaicneitorApp {
+    fn default() -> Self {
         Self {
             file_dialog: FileDialog::new()
                 .show_new_folder_button(false)
@@ -194,6 +230,19 @@ impl MosaicneitorApp {
             show_image: true,
             show_tesselae: true,
         }
+    }
+}
+
+impl MosaicneitorApp {
+    fn name() -> &'static str {
+        "Mosaicneitor"
+    }
+
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+        // This is also where you can customize the look and feel of egui using
+        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+
+        Default::default()
     }
 
     fn get_zoom_factor(&self) -> usize {
@@ -275,44 +324,4 @@ impl MosaicneitorApp {
             },
         ]
     }
-}
-
-fn generate_shapes_to_paint_tesselae_grid(
-    start_position: egui::Pos2,
-    end_position: egui::Pos2,
-    tessela_size: [usize; 2],
-    gap_between_tesselae: usize,
-) -> Vec<egui::epaint::Shape> {
-    let mut shapes = Vec::new();
-    let stroke_width = 1.0;
-    let stroke_color = egui::Color32::GREEN;
-    for tessela_origin_x in ((start_position.x as usize)..(end_position.x as usize))
-        .step_by(tessela_size[0] + gap_between_tesselae * 2)
-    {
-        for tessela_origin_y in ((start_position.y as usize)..(end_position.y as usize))
-            .step_by(tessela_size[1] + gap_between_tesselae * 2)
-        {
-            let start_point = egui::Pos2 {
-                x: (tessela_origin_x + gap_between_tesselae) as f32,
-                y: (tessela_origin_y + gap_between_tesselae) as f32,
-            };
-            let end_point = egui::Pos2 {
-                x: (tessela_origin_x + gap_between_tesselae + tessela_size[0]) as f32,
-                y: (tessela_origin_y + gap_between_tesselae + tessela_size[1]) as f32,
-            };
-            shapes.push(egui::epaint::Shape::Rect(egui::epaint::RectShape {
-                rect: egui::Rect {
-                    min: start_point,
-                    max: end_point,
-                },
-                rounding: eframe::egui::Rounding::ZERO,
-                fill: egui::Color32::TRANSPARENT,
-                stroke: egui::epaint::Stroke::new(stroke_width, stroke_color),
-                blur_width: 0.0,
-                fill_texture_id: egui::TextureId::default(),
-                uv: egui::Rect::ZERO,
-            }));
-        }
-    }
-    shapes
 }
