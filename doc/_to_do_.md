@@ -2,10 +2,6 @@
 
 ----
 
-Pan (scroll) the display if it doesn't fit on the window.
-
-----
-
 Pick and change color, for any given tessera. 
 
 Start assigning each tessera the general background color on the image under it ?

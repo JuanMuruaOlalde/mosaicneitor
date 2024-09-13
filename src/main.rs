@@ -3,9 +3,10 @@
 extern crate rust_i18n;
 i18n!("locales", fallback = "en");
 
-mod config;
-mod mosaic;
 mod user_interface;
+mod user_interface_app;
+mod mosaic;
+mod config;
 mod utils;
 
 fn main() -> eframe::Result<()> {

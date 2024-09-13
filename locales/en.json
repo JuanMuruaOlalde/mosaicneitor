@@ -6,10 +6,11 @@
     "mosaic_size": "Mosaic size",
     "horizontal": "horizontal",
     "vertical": "vertical",
-    "tessela_size": "Base size for tessela",
+    "tessera_size": "Base size for tessera",
     "A_side": "A-side",
     "B_side": "B-side",
-    "Show": "Show",
-    "Image": "Image",
-    "Tesselae": "Tesselae"
+    "show": "Show",
+    "image": "Image",
+    "tesserae_grid": "Grid",
+    "actual_tesserae": "Mosaic"
 }

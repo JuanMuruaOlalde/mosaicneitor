@@ -18,8 +18,9 @@ pub fn default_working_folder() -> PathBuf {
 
 pub const DEFAULT_OVERAL_MOSAIC_DIMENSIONS_HORIZONTAL_MM: usize = 500;
 pub const DEFAULT_OVERAL_MOSAIC_DIMENSIONS_VERTICAL_MM: usize = 300;
-pub const DEFAULT_BASE_TESSELA_SIZE_HORIZONTAL_MM: usize = 10;
-pub const DEFAULT_BASE_TESSELA_SIZE_VERTICAL_MM: usize = 10;
+pub const DEFAULT_BASE_TESSERA_SIZE_HORIZONTAL_MM: usize = 10;
+pub const DEFAULT_BASE_TESSERA_SIZE_VERTICAL_MM: usize = 10;
+pub const GAP_BETWEEN_TESSSELAE: usize = 1;
 
 #[cfg(test)]
 mod test {

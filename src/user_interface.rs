@@ -1,7 +1,11 @@
 use eframe::egui;
-use egui_file_dialog::FileDialog;
+use palette::convert::FromColor;
 
-use crate::{config, utils};
+use crate::{
+    config,
+    user_interface_app::{MosaicneitorApp, Zoom},
+    utils,
+};
 
 pub fn lauch_user_interface() -> eframe::Result<()> {
     rust_i18n::set_locale(crate::config::WORKING_LOCALE);
@@ -63,7 +67,7 @@ impl eframe::App for MosaicneitorApp {
                         }
                     });
                     ui.horizontal(|ui| {
-                        ui.label(format!("{} ->", t!("tessela_size")));
+                        ui.label(format!("{} ->", t!("tessera_size")));
                         ui.label(format!("{} (mm):", t!("A_side")));
                         ui.add(
                             egui::TextEdit::singleline(&mut self.size_side_a).desired_width(75.0),
@@ -75,9 +79,10 @@ impl eframe::App for MosaicneitorApp {
                     });
                     ui.separator();
                     ui.horizontal(|ui| {
-                        ui.label(format!("{}: ", t!("Show")));
-                        ui.checkbox(&mut self.show_image, t!("Image"));
-                        ui.checkbox(&mut self.show_tesselae, t!("Tesselae"));
+                        ui.label(format!("{}: ", t!("show")));
+                        ui.checkbox(&mut self.show_image, t!("image"));
+                        ui.checkbox(&mut self.show_tesserae_grid, t!("tesserae_grid"));
+                        ui.checkbox(&mut self.show_actual_tesserae, t!("actual_tesserae"));
                         ui.add_space(45.0);
                         ui.label("Zoom: ");
                         ui.selectable_value(&mut self.zoom_level, Zoom::X1, "x1");
@@ -92,15 +97,27 @@ impl eframe::App for MosaicneitorApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::both().show(ui, |ui| {
-                match &self.image {
+                match &self.image_for_displaying {
                     None => (),
                     Some(img) => {
-                        let mosaic_dimensions = self.get_mosaic_dimensions();
+                        let mosaic_dimensions = [
+                            self.get_mosaic_dimensions()[0] * self.get_zoom_factor(),
+                            self.get_mosaic_dimensions()[1] * self.get_zoom_factor(),
+                        ];
+                        let tessera_size = [
+                            self.get_tessera_size()[0] * self.get_zoom_factor(),
+                            self.get_tessera_size()[1] * self.get_zoom_factor(),
+                        ];
+                        let gap_between_tesserae =
+                            config::GAP_BETWEEN_TESSSELAE * self.get_zoom_factor();
                         let display_size = egui::Vec2::new(
                             mosaic_dimensions[0] as f32,
                             mosaic_dimensions[1] as f32,
                         );
-                        let start_position = ui.next_widget_position();
+                        let start_position = egui::Pos2 {
+                            x: ui.next_widget_position().x + 1.0,
+                            y: ui.next_widget_position().y + 1.0,
+                        };
                         let end_position = egui::Pos2 {
                             x: start_position.x + display_size.x,
                             y: start_position.y + display_size.y,
@@ -123,17 +140,24 @@ impl eframe::App for MosaicneitorApp {
                                 egui::Color32::WHITE,
                             );
                         };
-                        if self.show_tesselae {
-                            let tessela_size = self.get_tessela_size();
-                            let gap_between_tesselae = 1 * self.get_zoom_factor();
-                            let tesselae_grid = generate_shapes_to_paint_tesselae_grid(
+                        if self.show_tesserae_grid {
+                            let tesserae_grid = generate_shapes_to_paint_tesserae_grid(
                                 start_position,
                                 end_position,
-                                tessela_size,
-                                gap_between_tesselae,
+                                tessera_size,
+                                gap_between_tesserae,
                             );
-                            painter.extend(tesselae_grid);
+                            painter.extend(tesserae_grid);
                         };
+                        if self.show_actual_tesserae {
+                            let actual_tesserae = generate_shapes_to_paint_mosaic(
+                                self.get_base_mosaic_with_base_colors(),
+                                start_position,
+                                self.get_zoom_factor(),
+                                gap_between_tesserae,
+                            );
+                            painter.extend(actual_tesserae);
+                        }
                     }
                 };
             });
@@ -141,28 +165,28 @@ impl eframe::App for MosaicneitorApp {
     }
 }
 
-fn generate_shapes_to_paint_tesselae_grid(
+fn generate_shapes_to_paint_tesserae_grid(
     start_position: egui::Pos2,
     end_position: egui::Pos2,
-    tessela_size: [usize; 2],
-    gap_between_tesselae: usize,
+    tessera_size: [usize; 2],
+    gap_between_tesserae: usize,
 ) -> Vec<egui::epaint::Shape> {
     let mut shapes = Vec::new();
     let stroke_width = 1.0;
     let stroke_color = egui::Color32::GREEN;
-    for tessela_origin_x in ((start_position.x as usize)..(end_position.x as usize))
-        .step_by(tessela_size[0] + gap_between_tesselae * 2)
+    for tessera_origin_x in ((start_position.x as usize)..(end_position.x as usize))
+        .step_by(tessera_size[0] + gap_between_tesserae)
     {
-        for tessela_origin_y in ((start_position.y as usize)..(end_position.y as usize))
-            .step_by(tessela_size[1] + gap_between_tesselae * 2)
+        for tessera_origin_y in ((start_position.y as usize)..(end_position.y as usize))
+            .step_by(tessera_size[1] + gap_between_tesserae)
         {
             let start_point = egui::Pos2 {
-                x: (tessela_origin_x + gap_between_tesselae) as f32,
-                y: (tessela_origin_y + gap_between_tesselae) as f32,
+                x: (tessera_origin_x) as f32,
+                y: (tessera_origin_y) as f32,
             };
             let end_point = egui::Pos2 {
-                x: (tessela_origin_x + gap_between_tesselae + tessela_size[0]) as f32,
-                y: (tessela_origin_y + gap_between_tesselae + tessela_size[1]) as f32,
+                x: (tessera_origin_x + tessera_size[0]) as f32,
+                y: (tessera_origin_y + tessera_size[1]) as f32,
             };
             shapes.push(egui::epaint::Shape::Rect(egui::epaint::RectShape {
                 rect: egui::Rect {
@@ -181,147 +205,43 @@ fn generate_shapes_to_paint_tesselae_grid(
     shapes
 }
 
-struct MosaicneitorApp {
-    file_dialog: FileDialog,
-    selected_file: Option<std::path::PathBuf>,
-    image: Option<egui::ColorImage>,
-    dimensions_horizontal: String,
-    dimensions_vertical: String,
-    size_side_a: String,
-    size_side_b: String,
-    zoom_level: Zoom,
-    show_image: bool,
-    show_tesselae: bool,
-}
-
-#[derive(Debug, PartialEq)]
-enum Zoom {
-    X1,
-    X2,
-    X3,
-    X4,
-    X5,
-}
-
-impl Default for MosaicneitorApp {
-    fn default() -> Self {
-        Self {
-            file_dialog: FileDialog::new()
-                .show_new_folder_button(false)
-                .default_pos([20.0, 30.0])
-                .initial_directory(crate::config::default_working_folder())
-                .add_file_filter(
-                    "PNG",
-                    std::sync::Arc::new(|path| path.extension().unwrap_or_default() == "png"),
-                )
-                .add_file_filter(
-                    "JPEG",
-                    std::sync::Arc::new(|path| path.extension().unwrap_or_default() == "jpg"),
-                )
-                .default_file_filter("JPEG"),
-            selected_file: None,
-            image: None,
-            dimensions_horizontal: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_HORIZONTAL_MM
-                .to_string(),
-            dimensions_vertical: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_VERTICAL_MM.to_string(),
-            size_side_a: config::DEFAULT_BASE_TESSELA_SIZE_HORIZONTAL_MM.to_string(),
-            size_side_b: config::DEFAULT_BASE_TESSELA_SIZE_VERTICAL_MM.to_string(),
-            zoom_level: Zoom::X1,
-            show_image: true,
-            show_tesselae: true,
+fn generate_shapes_to_paint_mosaic(
+    mosaic: crate::mosaic::Mosaic,
+    start_position: egui::Pos2,
+    zoom_factor: usize,
+    gap_between_tesserae: usize,
+) -> Vec<egui::Shape> {
+    let mut shapes = Vec::new();
+    let tessera_size = [
+        mosaic.general_tessera_size.horizontal * zoom_factor,
+        mosaic.general_tessera_size.vertical * zoom_factor,
+    ];
+    let mut y = start_position.y;
+    for row in mosaic.contents {
+        let mut x = start_position.x;
+        for tessera in row {
+            let rgbcolor_for_tessera: palette::Srgba<u8> =
+                palette::Srgba::from_color(tessera.color).into();
+            let egui_color_for_tessera = egui::Color32::from_rgb(
+                rgbcolor_for_tessera.red,
+                rgbcolor_for_tessera.green,
+                rgbcolor_for_tessera.blue,
+            );
+            shapes.push(egui::epaint::Shape::Rect(egui::epaint::RectShape {
+                rect: egui::Rect {
+                    min: egui::pos2(x, y),
+                    max: egui::pos2(x + tessera_size[0] as f32, y + tessera_size[1] as f32),
+                },
+                rounding: eframe::egui::Rounding::ZERO,
+                fill: egui_color_for_tessera,
+                stroke: egui::epaint::Stroke::new(1.0, egui_color_for_tessera),
+                blur_width: 0.0,
+                fill_texture_id: egui::TextureId::default(),
+                uv: egui::Rect::ZERO,
+            }));
+            x = x + (tessera_size[0] + gap_between_tesserae) as f32;
         }
+        y = y + (tessera_size[1] + gap_between_tesserae) as f32;
     }
-}
-
-impl MosaicneitorApp {
-    fn name() -> &'static str {
-        "Mosaicneitor"
-    }
-
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
-        // This is also where you can customize the look and feel of egui using
-        // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
-
-        Default::default()
-    }
-
-    fn get_zoom_factor(&self) -> usize {
-        match self.zoom_level {
-            Zoom::X1 => 1,
-            Zoom::X2 => 2,
-            Zoom::X3 => 3,
-            Zoom::X4 => 4,
-            Zoom::X5 => 5,
-        }
-    }
-
-    fn load_image_from_selected_file(&mut self) {
-        match &self.selected_file {
-            None => self.image = None,
-            Some(path) => {
-                let loaded_image = image::ImageReader::open(path);
-                match loaded_image {
-                    Err(_) => self.image = None,
-                    Ok(img) => {
-                        let decoded_image = img.decode();
-                        match decoded_image {
-                            Err(_) => self.image = None,
-                            Ok(img) => {
-                                let buffered_image = img.to_rgb8();
-                                let pixels = buffered_image.as_flat_samples();
-                                let color_image = egui::ColorImage::from_rgb(
-                                    [img.width() as usize, img.height() as usize],
-                                    pixels.as_slice(),
-                                );
-                                self.image = Some(color_image);
-                                self.adjust_mosaic_dimensions_to_image_aspect_ratio();
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fn get_image_dimensions(&self) -> [usize; 2] {
-        match &self.image {
-            Some(img) => img.size,
-            None => [1, 1],
-        }
-    }
-
-    fn get_mosaic_dimensions(&self) -> [usize; 2] {
-        [
-            match self.dimensions_horizontal.parse::<usize>() {
-                Ok(dimension) => dimension * self.get_zoom_factor(),
-                Err(_error) => 1,
-            },
-            match self.dimensions_vertical.parse::<usize>() {
-                Ok(dimension) => dimension * self.get_zoom_factor(),
-                Err(_error) => 1,
-            },
-        ]
-    }
-
-    fn adjust_mosaic_dimensions_to_image_aspect_ratio(&mut self) {
-        let adjusted_dimensions = utils::round_preserving_aspect_ratio(
-            self.get_mosaic_dimensions(),
-            self.get_image_dimensions(),
-        );
-        self.dimensions_horizontal = adjusted_dimensions[0].to_string();
-        self.dimensions_vertical = adjusted_dimensions[1].to_string();
-    }
-
-    fn get_tessela_size(&self) -> [usize; 2] {
-        [
-            match self.size_side_a.parse::<usize>() {
-                Ok(size) => size * self.get_zoom_factor(),
-                Err(_error) => 1,
-            },
-            match self.size_side_b.parse::<usize>() {
-                Ok(size) => size * self.get_zoom_factor(),
-                Err(_error) => 1,
-            },
-        ]
-    }
+    shapes
 }

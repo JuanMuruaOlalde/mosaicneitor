@@ -1,32 +1,42 @@
-use crate::config;
-
 pub struct Mosaic {
-    tessela_base_size: SizeInMm,
-    how_many_columns: usize,
-    how_many_rows: usize,
-    grid: Vec<Vec<Tessela>>,
+    pub base_image: image::Rgba32FImage,
+    pub general_tessera_size: RectangleInMm,
+    pub contents: Vec<Vec<Tessera>>,
 }
 
-pub struct SizeInMm {
-    horizontal: usize,
-    vertical: usize,
+#[derive(Clone)]
+pub struct RectangleInMm {
+    pub horizontal: usize,
+    pub vertical: usize,
 }
+impl Copy for RectangleInMm {}
 
-pub struct Tessela {
-    color: palette::Oklab,
-    //shape: to be implemented... (how to represent a non-rectangular tessela of arbitrary shape ?!?)
+pub struct Tessera {
+    pub color: palette::Oklch,
+    //size: RectangleInMm,  to be implemented... (difficult... how to display different row sizes on the user interface ?!?)
+    //shape: to be implemented... (even more difficult... how to represent a non-rectangular tessera of arbitrary shape ?!?)
 }
 
 impl Mosaic {
-    pub fn new(how_many_columns: usize, how_many_rows: usize) -> Self {
+    pub fn new(base_image: image::Rgba32FImage, general_tessera_base_size: RectangleInMm) -> Self {
         Self {
-            tessela_base_size: SizeInMm {
-                horizontal: config::DEFAULT_BASE_TESSELA_SIZE_HORIZONTAL_MM,
-                vertical: config::DEFAULT_BASE_TESSELA_SIZE_VERTICAL_MM,
-            },
-            how_many_columns: how_many_columns,
-            how_many_rows: how_many_rows,
-            grid: Vec::new(),
+            base_image,
+            general_tessera_size: general_tessera_base_size,
+            contents: Vec::new(),
+        }
+    }
+    pub fn add_a_row_of_tesserae(&mut self, row: Vec<Tessera>) {
+        self.contents.push(row);
+    }
+
+    pub fn get_number_of_rows(&self) -> usize {
+        self.contents.len()
+    }
+
+    pub fn get_number_of_tesserae_in_row(&self, row_number: usize) -> usize {
+        match self.contents.get(row_number) {
+            Some(row) => row.len(),
+            None => 0,
         }
     }
 }

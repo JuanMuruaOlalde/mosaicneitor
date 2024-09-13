@@ -3,12 +3,16 @@
 ----
 
 Allow display to jump between two modes:
-- show image, and tesserae on top of it.
-- show only tesserae, without the underline image.
+- show image and (hollow) tesserae grid on top of it.
+- show only (solid) tesserae, without the underline image.
 
 ----
 
 Zoom the display
+
+----
+
+Pan (scroll) the display if it doesn't fit on the window.
 
 ----
 
