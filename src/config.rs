@@ -1,15 +1,11 @@
-use dirs::home_dir;
-use eframe::emath::Vec2;
-use std::path::PathBuf;
-
 pub const WORKING_LOCALE: &str = "en";
 
-pub fn default_viewport_dimensions() -> Vec2 {
-    Vec2::new(1024.0, 800.0)
+pub fn default_viewport_dimensions() -> eframe::emath::Vec2 {
+    eframe::emath::Vec2::new(1024.0, 800.0)
 }
 
-pub fn default_working_folder() -> PathBuf {
-    match home_dir() {
+pub fn default_working_folder() -> std::path::PathBuf {
+    match dirs::home_dir() {
         Some(x) => x,
         None => std::path::PathBuf::new(),
     }

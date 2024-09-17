@@ -38,9 +38,13 @@ impl eframe::App for MosaicneitorApp {
             if let Some(path) = self.file_dialog.take_selected() {
                 self.selected_file = Some(path.to_path_buf());
                 self.load_image_from_selected_file();
+                self.show_image = true;
+                self.show_actual_tesserae = false;
             }
             match &self.selected_file {
-                None => (),
+                None => {
+                    ui.label("?");
+                }
                 Some(file) => {
                     let image_dimensions = self.get_image_dimensions();
                     ui.label(format!(
@@ -49,82 +53,89 @@ impl eframe::App for MosaicneitorApp {
                         image_dimensions[0],
                         image_dimensions[1],
                     ));
-                    ui.separator();
-                    ui.horizontal(|ui| {
-                        ui.label(format!("{} ->", t!("mosaic_size")));
-                        ui.label(format!("{} (mm):", t!("horizontal")));
-                        ui.add(
-                            egui::TextEdit::singleline(&mut self.dimensions_horizontal)
-                                .desired_width(75.0),
-                        );
-                        ui.label(format!("{} (mm):", t!("vertical")));
-                        ui.add(
-                            egui::TextEdit::singleline(&mut self.dimensions_vertical)
-                                .desired_width(75.0),
-                        );
-                        if ui.button(t!("btn_adjust_mosaic_to_image")).clicked() {
-                            self.adjust_mosaic_dimensions_to_image_aspect_ratio();
-                        }
-                    });
-                    ui.horizontal(|ui| {
-                        ui.label(format!("{} ->", t!("tessera_size")));
-                        ui.label(format!("{} (mm):", t!("A_side")));
-                        ui.add(
-                            egui::TextEdit::singleline(&mut self.size_side_a).desired_width(75.0),
-                        );
-                        ui.label(format!("{} (mm):", t!("B_side")));
-                        ui.add(
-                            egui::TextEdit::singleline(&mut self.size_side_b).desired_width(75.0),
-                        );
-                    });
-                    ui.separator();
-                    ui.horizontal(|ui| {
-                        ui.label(format!("{}: ", t!("show")));
-                        ui.checkbox(&mut self.show_image, t!("image"));
-                        ui.checkbox(&mut self.show_tesserae_grid, t!("tesserae_grid"));
-                        ui.checkbox(&mut self.show_actual_tesserae, t!("actual_tesserae"));
-                        ui.add_space(45.0);
-                        ui.label("Zoom: ");
-                        ui.selectable_value(&mut self.zoom_level, Zoom::X1, "x1");
-                        ui.selectable_value(&mut self.zoom_level, Zoom::X2, "x2");
-                        ui.selectable_value(&mut self.zoom_level, Zoom::X3, "x3");
-                        ui.selectable_value(&mut self.zoom_level, Zoom::X4, "x4");
-                        ui.selectable_value(&mut self.zoom_level, Zoom::X5, "x5");
-                    });
                 }
             }
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("{} ->", t!("mosaic_size")));
+                ui.label(format!("{} (mm):", t!("horizontal")));
+                ui.add(
+                    egui::TextEdit::singleline(&mut self.dimensions_horizontal).desired_width(75.0),
+                );
+                ui.label(format!("{} (mm):", t!("vertical")));
+                ui.add(
+                    egui::TextEdit::singleline(&mut self.dimensions_vertical).desired_width(75.0),
+                );
+                if ui.button(t!("btn_adjust_mosaic_to_image")).clicked() {
+                    self.adjust_mosaic_dimensions_to_image_aspect_ratio();
+                }
+            });
+            ui.horizontal(|ui| {
+                ui.label(format!("{} ->", t!("tessera_size")));
+                ui.label(format!("{} (mm):", t!("A_side")));
+                ui.add(egui::TextEdit::singleline(&mut self.size_side_a).desired_width(75.0));
+                ui.label(format!("{} (mm):", t!("B_side")));
+                ui.add(egui::TextEdit::singleline(&mut self.size_side_b).desired_width(75.0));
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                if ui
+                    .button(t!("btn_generate_a_new_mosaic_from_image"))
+                    .clicked()
+                {
+                    self.mosaic = self.get_mosaic_from_base_image();
+                    self.show_image = false;
+                    self.show_actual_tesserae = true;
+                }
+                ui.add_space(75.0);
+                if ui.button(t!("btn_generate_a_new_blank_mosaic")).clicked() {
+                    self.mosaic = self.get_a_blank_mosaic();
+                    self.show_image = false;
+                    self.show_actual_tesserae = true;
+                }
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!("{}: ", t!("show")));
+                ui.checkbox(&mut self.show_image, t!("image"));
+                ui.checkbox(&mut self.show_tesserae_grid, t!("tesserae_grid"));
+                ui.checkbox(&mut self.show_actual_tesserae, t!("actual_tesserae"));
+                ui.add_space(45.0);
+                ui.label("Zoom: ");
+                ui.selectable_value(&mut self.zoom_level, Zoom::X1, "x1");
+                ui.selectable_value(&mut self.zoom_level, Zoom::X2, "x2");
+                ui.selectable_value(&mut self.zoom_level, Zoom::X3, "x3");
+                ui.selectable_value(&mut self.zoom_level, Zoom::X4, "x4");
+                ui.selectable_value(&mut self.zoom_level, Zoom::X5, "x5");
+            });
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::ScrollArea::both().show(ui, |ui| {
-                match &self.image_for_displaying {
-                    None => (),
-                    Some(img) => {
-                        let mosaic_dimensions = [
-                            self.get_mosaic_dimensions()[0] * self.get_zoom_factor(),
-                            self.get_mosaic_dimensions()[1] * self.get_zoom_factor(),
-                        ];
-                        let tessera_size = [
-                            self.get_tessera_size()[0] * self.get_zoom_factor(),
-                            self.get_tessera_size()[1] * self.get_zoom_factor(),
-                        ];
-                        let gap_between_tesserae =
-                            config::GAP_BETWEEN_TESSSELAE * self.get_zoom_factor();
-                        let display_size = egui::Vec2::new(
-                            mosaic_dimensions[0] as f32,
-                            mosaic_dimensions[1] as f32,
-                        );
-                        let start_position = egui::Pos2 {
-                            x: ui.next_widget_position().x + 1.0,
-                            y: ui.next_widget_position().y + 1.0,
-                        };
-                        let end_position = egui::Pos2 {
-                            x: start_position.x + display_size.x,
-                            y: start_position.y + display_size.y,
-                        };
-                        let (_response, painter) =
-                            ui.allocate_painter(display_size, egui::Sense::hover());
-                        if self.show_image {
+                let mosaic_dimensions = [
+                    self.get_mosaic_dimensions()[0] * self.get_zoom_factor(),
+                    self.get_mosaic_dimensions()[1] * self.get_zoom_factor(),
+                ];
+                let tessera_size = [
+                    self.get_tessera_size()[0] * self.get_zoom_factor(),
+                    self.get_tessera_size()[1] * self.get_zoom_factor(),
+                ];
+                let gap_between_tesserae = config::GAP_BETWEEN_TESSSELAE * self.get_zoom_factor();
+                let display_size =
+                    egui::Vec2::new(mosaic_dimensions[0] as f32, mosaic_dimensions[1] as f32);
+                let start_position = egui::Pos2 {
+                    x: ui.next_widget_position().x + 1.0,
+                    y: ui.next_widget_position().y + 1.0,
+                };
+                let end_position = egui::Pos2 {
+                    x: start_position.x + display_size.x,
+                    y: start_position.y + display_size.y,
+                };
+                let (_response, painter) = ui.allocate_painter(display_size, egui::Sense::hover());
+                if self.show_image {
+                    match &self.image_for_displaying {
+                        None => (),
+                        Some(img) => {
                             let handle = ctx.load_texture(
                                 "image-to-display",
                                 egui::ImageData::from(img.clone()),
@@ -139,27 +150,27 @@ impl eframe::App for MosaicneitorApp {
                                 ),
                                 egui::Color32::WHITE,
                             );
-                        };
-                        if self.show_tesserae_grid {
-                            let tesserae_grid = generate_shapes_to_paint_tesserae_grid(
-                                start_position,
-                                end_position,
-                                tessera_size,
-                                gap_between_tesserae,
-                            );
-                            painter.extend(tesserae_grid);
-                        };
-                        if self.show_actual_tesserae {
-                            let actual_tesserae = generate_shapes_to_paint_mosaic(
-                                self.get_base_mosaic_with_base_colors(),
-                                start_position,
-                                self.get_zoom_factor(),
-                                gap_between_tesserae,
-                            );
-                            painter.extend(actual_tesserae);
                         }
                     }
                 };
+                if self.show_tesserae_grid {
+                    let tesserae_grid = generate_shapes_to_paint_tesserae_grid(
+                        start_position,
+                        end_position,
+                        tessera_size,
+                        gap_between_tesserae,
+                    );
+                    painter.extend(tesserae_grid);
+                };
+                if self.show_actual_tesserae {
+                    let actual_tesserae = generate_shapes_to_paint_mosaic(
+                        &self.mosaic,
+                        start_position,
+                        self.get_zoom_factor(),
+                        gap_between_tesserae,
+                    );
+                    painter.extend(actual_tesserae);
+                }
             });
         });
     }
@@ -206,7 +217,7 @@ fn generate_shapes_to_paint_tesserae_grid(
 }
 
 fn generate_shapes_to_paint_mosaic(
-    mosaic: crate::mosaic::Mosaic,
+    mosaic: &crate::mosaic::Mosaic,
     start_position: egui::Pos2,
     zoom_factor: usize,
     gap_between_tesserae: usize,
@@ -217,7 +228,7 @@ fn generate_shapes_to_paint_mosaic(
         mosaic.general_tessera_size.vertical * zoom_factor,
     ];
     let mut y = start_position.y;
-    for row in mosaic.contents {
+    for row in &mosaic.contents {
         let mut x = start_position.x;
         for tessera in row {
             let rgbcolor_for_tessera: palette::Srgba<u8> =

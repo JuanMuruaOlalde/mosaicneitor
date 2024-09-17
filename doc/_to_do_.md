@@ -12,7 +12,8 @@ The color can be picked from:
 
 Ask the user to save the mosaic before start editing it. 
 In order to confirm that she/he is ok with the dimensions and size.
-(Any change in dimensions or size changes the mosaic base structure
+(Any change in dimensions or size 
+ changes the mosaic base structure
  and restarts all color/shape assigments.)
 
 ----

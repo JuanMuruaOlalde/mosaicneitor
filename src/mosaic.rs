@@ -29,10 +29,12 @@ impl Mosaic {
         self.contents.push(row);
     }
 
+    // this methods is used only for tests
     pub fn get_number_of_rows(&self) -> usize {
         self.contents.len()
     }
 
+    // this methods is used only for tests
     pub fn get_number_of_tesserae_in_row(&self, row_number: usize) -> usize {
         match self.contents.get(row_number) {
             Some(row) => row.len(),

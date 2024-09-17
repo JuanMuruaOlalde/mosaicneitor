@@ -9,6 +9,7 @@ pub(crate) struct MosaicneitorApp {
     pub(crate) selected_file: Option<std::path::PathBuf>,
     base_image: image::Rgba32FImage,
     pub(crate) image_for_displaying: Option<egui::ColorImage>,
+    pub(crate) mosaic: mosaic::Mosaic,
     pub(crate) dimensions_horizontal: String,
     pub(crate) dimensions_vertical: String,
     pub(crate) size_side_a: String,
@@ -38,13 +39,20 @@ impl Default for MosaicneitorApp {
             selected_file: None,
             base_image: image::Rgba32FImage::default(),
             image_for_displaying: None,
+            mosaic: mosaic::Mosaic::new(
+                image::Rgba32FImage::default(),
+                mosaic::RectangleInMm {
+                    horizontal: config::DEFAULT_BASE_TESSERA_SIZE_HORIZONTAL_MM,
+                    vertical: config::DEFAULT_BASE_TESSERA_SIZE_VERTICAL_MM,
+                },
+            ),
             dimensions_horizontal: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_HORIZONTAL_MM
                 .to_string(),
             dimensions_vertical: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_VERTICAL_MM.to_string(),
             size_side_a: config::DEFAULT_BASE_TESSERA_SIZE_HORIZONTAL_MM.to_string(),
             size_side_b: config::DEFAULT_BASE_TESSERA_SIZE_VERTICAL_MM.to_string(),
             zoom_level: Zoom::X1,
-            show_image: true,
+            show_image: false,
             show_tesserae_grid: true,
             show_actual_tesserae: false,
         }
@@ -93,6 +101,8 @@ impl MosaicneitorApp {
                                 );
                                 self.image_for_displaying = Some(egui_color_image);
                                 self.adjust_mosaic_dimensions_to_image_aspect_ratio();
+                                self.show_image = true;
+                                self.show_tesserae_grid = true;
                             }
                         }
                     }
@@ -153,7 +163,34 @@ impl MosaicneitorApp {
         }
     }
 
-    pub fn get_base_mosaic_with_base_colors(&self) -> mosaic::Mosaic {
+    pub fn get_a_blank_mosaic(&self) -> mosaic::Mosaic {
+        let general_tessera_size = mosaic::RectangleInMm {
+            horizontal: self.get_tessera_size()[0],
+            vertical: self.get_tessera_size()[1],
+        };
+        let mosaic_size = mosaic::RectangleInMm {
+            horizontal: self.get_mosaic_dimensions()[0],
+            vertical: self.get_mosaic_dimensions()[1],
+        };
+        let color_srgba: palette::Srgba<f32> =
+            palette::Srgba::from(egui::Color32::LIGHT_GRAY.to_srgba_unmultiplied()).into();
+        let color_oklch = palette::Oklch::from_color(color_srgba);
+        let mut mosaic = mosaic::Mosaic::new(self.base_image.clone(), general_tessera_size);
+        for _vertical_position in (1..mosaic_size.vertical)
+            .step_by(general_tessera_size.vertical + config::GAP_BETWEEN_TESSSELAE)
+        {
+            let mut row: Vec<mosaic::Tessera> = Vec::new();
+            for _horizontal_position in (1..mosaic_size.horizontal)
+                .step_by(general_tessera_size.horizontal + config::GAP_BETWEEN_TESSSELAE)
+            {
+                row.push(mosaic::Tessera { color: color_oklch });
+            }
+            mosaic.add_a_row_of_tesserae(row);
+        }
+        mosaic
+    }
+
+    pub fn get_mosaic_from_base_image(&self) -> mosaic::Mosaic {
         let general_tessera_size = mosaic::RectangleInMm {
             horizontal: self.get_tessera_size()[0],
             vertical: self.get_tessera_size()[1],
@@ -224,7 +261,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn you_can_get_mosaic_dimensions() {
+    fn get_mosaic_dimensions_yields_the_correct_values_or_defaults() {
         let mut app = MosaicneitorApp::default();
 
         app.dimensions_horizontal = String::from("500");
@@ -240,7 +277,7 @@ mod test {
         assert_eq!(app.get_mosaic_dimensions(), [1, 1]);
     }
     #[test]
-    fn you_can_get_tessera_size() {
+    fn get_tessera_size_yields_the_correct_values_or_defaults() {
         let mut app = MosaicneitorApp::default();
 
         app.size_side_a = String::from("10");
@@ -288,7 +325,7 @@ mod test {
     }
 
     #[test]
-    fn pixel_color_yields_error_if_image_is_none() {
+    fn get_pixel_color_yields_error_if_image_is_none() {
         let app = MosaicneitorApp::default();
         assert_eq!(
             app.get_pixel_color([234, 567]),
@@ -297,7 +334,7 @@ mod test {
     }
 
     #[test]
-    fn pixel_color_yields_error_if_you_ask_for_pixels_outside_image_boundaries() {
+    fn get_pixel_color_yields_error_if_you_ask_for_pixels_outside_image_boundaries() {
         let mut app = MosaicneitorApp::default();
         app.image_for_displaying = Some(egui::ColorImage::example());
         let pixel_position = [
@@ -311,14 +348,14 @@ mod test {
     }
 
     #[test]
-    fn base_mosaic_with_base_colors_yields_correct_mosaic_dimensions_for_happy_path_case() {
+    fn get_mosaic_from_base_image_yields_correct_mosaic_dimensions_for_happy_path_case() {
         let mut app = MosaicneitorApp::default();
         app.dimensions_horizontal = String::from("500");
         app.dimensions_vertical = String::from("300");
         app.size_side_a = String::from("10");
         app.size_side_b = String::from("10");
         app.image_for_displaying = Some(egui::ColorImage::example());
-        let mosaic = app.get_base_mosaic_with_base_colors();
+        let mosaic = app.get_mosaic_from_base_image();
         assert_eq!(
             mosaic.get_number_of_rows(),
             300 / (10 + config::GAP_BETWEEN_TESSSELAE) + 1
