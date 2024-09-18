@@ -1,5 +1,11 @@
 # work cards, reminders and notes
 
+---- 
+
+if image is None, loaded_image must be the same, and viceversa
+
+MosaicneitorApp::loaded_image must be of type Option<image::Rgba32FImage>.
+
 ----
 
 Pick and change color, for any given tessera. 

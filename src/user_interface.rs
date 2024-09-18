@@ -3,6 +3,7 @@ use palette::convert::FromColor;
 
 use crate::{
     config,
+    mosaic::{Mosaic, PositionOnGrid},
     user_interface_app::{MosaicneitorApp, Zoom},
     utils,
 };
@@ -60,11 +61,11 @@ impl eframe::App for MosaicneitorApp {
                 ui.label(format!("{} ->", t!("mosaic_size")));
                 ui.label(format!("{} (mm):", t!("horizontal")));
                 ui.add(
-                    egui::TextEdit::singleline(&mut self.dimensions_horizontal).desired_width(75.0),
+                    egui::TextEdit::singleline(&mut self.mosaic_dimension_h).desired_width(75.0),
                 );
                 ui.label(format!("{} (mm):", t!("vertical")));
                 ui.add(
-                    egui::TextEdit::singleline(&mut self.dimensions_vertical).desired_width(75.0),
+                    egui::TextEdit::singleline(&mut self.mosaic_dimension_v).desired_width(75.0),
                 );
                 if ui.button(t!("btn_adjust_mosaic_to_image")).clicked() {
                     self.adjust_mosaic_dimensions_to_image_aspect_ratio();
@@ -73,9 +74,9 @@ impl eframe::App for MosaicneitorApp {
             ui.horizontal(|ui| {
                 ui.label(format!("{} ->", t!("tessera_size")));
                 ui.label(format!("{} (mm):", t!("A_side")));
-                ui.add(egui::TextEdit::singleline(&mut self.size_side_a).desired_width(75.0));
+                ui.add(egui::TextEdit::singleline(&mut self.tessera_size_a).desired_width(75.0));
                 ui.label(format!("{} (mm):", t!("B_side")));
-                ui.add(egui::TextEdit::singleline(&mut self.size_side_b).desired_width(75.0));
+                ui.add(egui::TextEdit::singleline(&mut self.tessera_size_b).desired_width(75.0));
             });
             ui.separator();
             ui.horizontal(|ui| {
@@ -83,7 +84,7 @@ impl eframe::App for MosaicneitorApp {
                     .button(t!("btn_generate_a_new_mosaic_from_image"))
                     .clicked()
                 {
-                    self.mosaic = self.get_mosaic_from_base_image();
+                    self.mosaic = self.get_mosaic_from_loaded_image();
                     self.show_image = false;
                     self.show_actual_tesserae = true;
                 }
@@ -120,7 +121,8 @@ impl eframe::App for MosaicneitorApp {
                     self.get_tessera_size()[0] * self.get_zoom_factor(),
                     self.get_tessera_size()[1] * self.get_zoom_factor(),
                 ];
-                let gap_between_tesserae = config::GAP_BETWEEN_TESSSELAE * self.get_zoom_factor();
+                let gap_between_tesserae =
+                    config::DEFAULT_GAP_BETWEEN_TESSSELAE * self.get_zoom_factor();
                 let display_size =
                     egui::Vec2::new(mosaic_dimensions[0] as f32, mosaic_dimensions[1] as f32);
                 let start_position = egui::Pos2 {
@@ -133,7 +135,7 @@ impl eframe::App for MosaicneitorApp {
                 };
                 let (_response, painter) = ui.allocate_painter(display_size, egui::Sense::hover());
                 if self.show_image {
-                    match &self.image_for_displaying {
+                    match &self.image {
                         None => (),
                         Some(img) => {
                             let handle = ctx.load_texture(
@@ -170,6 +172,43 @@ impl eframe::App for MosaicneitorApp {
                         gap_between_tesserae,
                     );
                     painter.extend(actual_tesserae);
+                    match &self.selected_tessera {
+                        Some(pos) => {
+                            let x = start_position.x
+                                + (pos.column * tessera_size[0]
+                                    + (pos.column - 1) * gap_between_tesserae
+                                    - tessera_size[0] / 2) as f32;
+                            let y = start_position.y
+                                + (pos.row * tessera_size[1] + (pos.row - 1) * gap_between_tesserae
+                                    - tessera_size[1] / 2) as f32;
+                            painter.add(egui::epaint::CircleShape {
+                                center: egui::Pos2 { x, y },
+                                radius: (tessera_size[0] / 2) as f32,
+                                fill: egui::Color32::LIGHT_RED,
+                                stroke: egui::Stroke {
+                                    width: 1.0,
+                                    color: egui::Color32::LIGHT_RED,
+                                },
+                            });
+                        }
+                        None => (),
+                    }
+                }
+                if ui.rect_contains_pointer(egui::Rect::from_min_max(start_position, end_position))
+                {
+                    ctx.input(|i| {
+                        if i.pointer.button_clicked(egui::PointerButton::Primary) {
+                            if let Some(pos) = i.pointer.interact_pos() {
+                                let tessera_position = get_tessera_position(
+                                    pos,
+                                    start_position,
+                                    tessera_size,
+                                    gap_between_tesserae,
+                                );
+                                self.selected_tessera = Some(tessera_position);
+                            }
+                        }
+                    });
                 }
             });
         });
@@ -217,7 +256,7 @@ fn generate_shapes_to_paint_tesserae_grid(
 }
 
 fn generate_shapes_to_paint_mosaic(
-    mosaic: &crate::mosaic::Mosaic,
+    mosaic: &Mosaic,
     start_position: egui::Pos2,
     zoom_factor: usize,
     gap_between_tesserae: usize,
@@ -255,4 +294,92 @@ fn generate_shapes_to_paint_mosaic(
         y = y + (tessera_size[1] + gap_between_tesserae) as f32;
     }
     shapes
+}
+
+fn get_tessera_position(
+    clicked_position: egui::Pos2,
+    start_position: egui::Pos2,
+    tessera_size: [usize; 2],
+    gap_between_tesserae: usize,
+) -> PositionOnGrid {
+    let normalized_position = clicked_position - start_position;
+    PositionOnGrid {
+        column: (normalized_position.x / (tessera_size[0] + gap_between_tesserae) as f32).ceil()
+            as usize,
+        row: (normalized_position.y / (tessera_size[1] + gap_between_tesserae) as f32).ceil()
+            as usize,
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn translation_from_clicked_position_to_mosaic_position_yieds_correct_row_and_colum() {
+        let start_position = egui::Pos2 { x: 0.0, y: 0.0 };
+        let tessera_size = [10, 10];
+        let gap_size = 1;
+
+        assert_eq!(
+            get_tessera_position(
+                egui::Pos2 { x: 5.0, y: 5.0 },
+                start_position,
+                tessera_size,
+                gap_size
+            ),
+            PositionOnGrid { row: 1, column: 1 }
+        );
+
+        assert_eq!(
+            get_tessera_position(
+                egui::Pos2 { x: 5.0, y: 15.0 },
+                start_position,
+                tessera_size,
+                gap_size
+            ),
+            PositionOnGrid { row: 2, column: 1 }
+        );
+
+        assert_eq!(
+            get_tessera_position(
+                egui::Pos2 { x: 15.0, y: 5.0 },
+                start_position,
+                tessera_size,
+                gap_size
+            ),
+            PositionOnGrid { row: 1, column: 2 }
+        );
+
+        assert_eq!(
+            get_tessera_position(
+                egui::Pos2 { x: 87.0, y: 54.0 },
+                start_position,
+                tessera_size,
+                gap_size
+            ),
+            PositionOnGrid { row: 5, column: 8 }
+        );
+
+        let start = [987, 789];
+        let column = 354;
+        let x = start[0] + column * tessera_size[0] + (column - 1) * gap_size;
+        let row = 2451;
+        let y = start[1] + row * tessera_size[1] + (row - 1) * gap_size;
+        assert_eq!(
+            get_tessera_position(
+                egui::Pos2 {
+                    x: x as f32,
+                    y: y as f32
+                },
+                egui::Pos2 {
+                    x: start[0] as f32,
+                    y: start[1] as f32
+                },
+                tessera_size,
+                gap_size
+            ),
+            PositionOnGrid { row, column }
+        );
+    }
 }

@@ -4,6 +4,12 @@ pub struct Mosaic {
     pub contents: Vec<Vec<Tessera>>,
 }
 
+pub struct Tessera {
+    pub color: palette::Oklch,
+    //size: RectangleInMm,  to be implemented... (difficult... how to display different row sizes on the user interface ?!?)
+    //shape: to be implemented... (even more difficult... how to represent a non-rectangular tessera of arbitrary shape ?!?)
+}
+
 #[derive(Clone)]
 pub struct RectangleInMm {
     pub horizontal: usize,
@@ -11,10 +17,10 @@ pub struct RectangleInMm {
 }
 impl Copy for RectangleInMm {}
 
-pub struct Tessera {
-    pub color: palette::Oklch,
-    //size: RectangleInMm,  to be implemented... (difficult... how to display different row sizes on the user interface ?!?)
-    //shape: to be implemented... (even more difficult... how to represent a non-rectangular tessera of arbitrary shape ?!?)
+#[derive(PartialEq, Debug)]
+pub struct PositionOnGrid {
+    pub row: usize,
+    pub column: usize,
 }
 
 impl Mosaic {
