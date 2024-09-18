@@ -1,5 +1,5 @@
 pub struct Mosaic {
-    pub base_image: image::Rgba32FImage,
+    pub base_image: Option<image::Rgba32FImage>,
     pub general_tessera_size: RectangleInMm,
     pub contents: Vec<Vec<Tessera>>,
 }
@@ -24,7 +24,10 @@ pub struct PositionOnGrid {
 }
 
 impl Mosaic {
-    pub fn new(base_image: image::Rgba32FImage, general_tessera_base_size: RectangleInMm) -> Self {
+    pub fn new(
+        base_image: Option<image::Rgba32FImage>,
+        general_tessera_base_size: RectangleInMm,
+    ) -> Self {
         Self {
             base_image,
             general_tessera_size: general_tessera_base_size,

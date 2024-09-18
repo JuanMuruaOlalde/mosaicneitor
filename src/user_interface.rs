@@ -39,8 +39,6 @@ impl eframe::App for MosaicneitorApp {
             if let Some(path) = self.file_dialog.take_selected() {
                 self.selected_file = Some(path.to_path_buf());
                 self.load_image_from_selected_file();
-                self.show_image = true;
-                self.show_actual_tesserae = false;
             }
             match &self.selected_file {
                 None => {
@@ -85,13 +83,13 @@ impl eframe::App for MosaicneitorApp {
                     .clicked()
                 {
                     self.mosaic = self.get_mosaic_from_loaded_image();
-                    self.show_image = false;
+                    self.show_tesserae_grid = true;
                     self.show_actual_tesserae = true;
                 }
                 ui.add_space(75.0);
                 if ui.button(t!("btn_generate_a_new_blank_mosaic")).clicked() {
                     self.mosaic = self.get_a_blank_mosaic();
-                    self.show_image = false;
+                    self.show_tesserae_grid = true;
                     self.show_actual_tesserae = true;
                 }
             });
@@ -101,6 +99,9 @@ impl eframe::App for MosaicneitorApp {
                 ui.checkbox(&mut self.show_image, t!("image"));
                 ui.checkbox(&mut self.show_tesserae_grid, t!("tesserae_grid"));
                 ui.checkbox(&mut self.show_actual_tesserae, t!("actual_tesserae"));
+                if !self.show_actual_tesserae {
+                    self.selected_tessera = None;
+                }
                 ui.add_space(45.0);
                 ui.label("Zoom: ");
                 ui.selectable_value(&mut self.zoom_level, Zoom::X1, "x1");
@@ -183,11 +184,11 @@ impl eframe::App for MosaicneitorApp {
                                     - tessera_size[1] / 2) as f32;
                             painter.add(egui::epaint::CircleShape {
                                 center: egui::Pos2 { x, y },
-                                radius: (tessera_size[0] / 2) as f32,
-                                fill: egui::Color32::LIGHT_RED,
+                                radius: ((tessera_size[0] + tessera_size[1]) / 5) as f32,
+                                fill: config::COLOR_FOR_HIGHLIGHTING,
                                 stroke: egui::Stroke {
                                     width: 1.0,
-                                    color: egui::Color32::LIGHT_RED,
+                                    color: config::COLOR_FOR_HIGHLIGHTING,
                                 },
                             });
                         }
@@ -223,7 +224,7 @@ fn generate_shapes_to_paint_tesserae_grid(
 ) -> Vec<egui::epaint::Shape> {
     let mut shapes = Vec::new();
     let stroke_width = 1.0;
-    let stroke_color = egui::Color32::GREEN;
+    let stroke_color = config::COLOR_FOR_GRID;
     for tessera_origin_x in ((start_position.x as usize)..(end_position.x as usize))
         .step_by(tessera_size[0] + gap_between_tesserae)
     {

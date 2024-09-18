@@ -11,7 +11,7 @@ use crate::{
 pub(crate) struct MosaicneitorApp {
     pub(crate) file_dialog: FileDialog,
     pub(crate) selected_file: Option<std::path::PathBuf>,
-    loaded_image: image::Rgba32FImage,
+    loaded_image: Option<image::Rgba32FImage>,
     pub(crate) image: Option<egui::ColorImage>,
     pub(crate) mosaic: Mosaic,
     pub(crate) mosaic_dimension_h: String,
@@ -42,10 +42,10 @@ impl Default for MosaicneitorApp {
                 )
                 .default_file_filter("JPEG"),
             selected_file: None,
-            loaded_image: image::Rgba32FImage::default(),
+            loaded_image: None,
             image: None,
             mosaic: Mosaic::new(
-                image::Rgba32FImage::default(),
+                None,
                 RectangleInMm {
                     horizontal: config::DEFAULT_BASE_TESSERA_SIZE_HORIZONTAL_MM,
                     vertical: config::DEFAULT_BASE_TESSERA_SIZE_VERTICAL_MM,
@@ -58,7 +58,7 @@ impl Default for MosaicneitorApp {
             zoom_level: Zoom::X1,
             show_image: false,
             show_tesserae_grid: true,
-            show_actual_tesserae: false,
+            show_actual_tesserae: true,
             selected_tessera: None,
         }
     }
@@ -97,7 +97,7 @@ impl MosaicneitorApp {
                         match decoded_image {
                             Err(_) => self.image = None,
                             Ok(img) => {
-                                self.loaded_image = img.to_rgba32f();
+                                self.loaded_image = Some(img.to_rgba32f());
                                 let buffered_image = img.to_rgb8();
                                 let pixels = buffered_image.as_flat_samples();
                                 let egui_color_image = egui::ColorImage::from_rgb(
@@ -108,6 +108,13 @@ impl MosaicneitorApp {
                                 self.adjust_mosaic_dimensions_to_image_aspect_ratio();
                                 self.show_image = true;
                                 self.show_tesserae_grid = true;
+                                self.mosaic = Mosaic::new(
+                                    Some(img.to_rgba32f()),
+                                    RectangleInMm {
+                                        horizontal: self.get_tessera_size()[0],
+                                        vertical: self.get_tessera_size()[1],
+                                    },
+                                );
                             }
                         }
                     }
@@ -169,6 +176,19 @@ impl MosaicneitorApp {
     }
 
     pub fn get_a_blank_mosaic(&self) -> Mosaic {
+        Mosaic::new(
+            self.loaded_image.clone(),
+            RectangleInMm {
+                horizontal: self.get_tessera_size()[0],
+                vertical: self.get_tessera_size()[1],
+            },
+        )
+    }
+
+    pub fn get_a_blank_mosaic_with_all_tesserae_equal_color(
+        &self,
+        choosen_color: egui::Color32,
+    ) -> Mosaic {
         let general_tessera_size = RectangleInMm {
             horizontal: self.get_tessera_size()[0],
             vertical: self.get_tessera_size()[1],
@@ -178,9 +198,9 @@ impl MosaicneitorApp {
             vertical: self.get_mosaic_dimensions()[1],
         };
         let color_srgba: palette::Srgba<f32> =
-            palette::Srgba::from(egui::Color32::LIGHT_GRAY.to_srgba_unmultiplied()).into();
+            palette::Srgba::from(choosen_color.to_srgba_unmultiplied()).into();
         let color_oklch = palette::Oklch::from_color(color_srgba);
-        let mut mosaic = Mosaic::new(self.loaded_image.clone(), general_tessera_size);
+        let mut mosaic = Mosaic::new(None, general_tessera_size);
         for _vertical_position in (1..mosaic_size.vertical)
             .step_by(general_tessera_size.vertical + config::DEFAULT_GAP_BETWEEN_TESSSELAE)
         {
