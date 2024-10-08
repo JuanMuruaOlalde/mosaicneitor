@@ -1,0 +1,30 @@
+
+
+==============================================================
+
+
+==============================================================
+
+match &self.selected_tessera {
+    Some(pos) => {
+        let x = start_position.x
+            + (pos.column * tessera_size[0]
+                + (pos.column - 1) * gap_between_tesserae
+                - tessera_size[0] / 2) as f32;
+        let y = start_position.y
+            + (pos.row * tessera_size[1] + (pos.row - 1) * gap_between_tesserae
+                - tessera_size[1] / 2) as f32;
+        painter.add(egui::epaint::CircleShape {
+            center: egui::Pos2 { x, y },
+            radius: ((tessera_size[0] + tessera_size[1]) / 5) as f32,
+            fill: config::COLOR_FOR_HIGHLIGHTING,
+            stroke: egui::Stroke {
+                width: 1.0,
+                color: config::COLOR_FOR_HIGHLIGHTING,
+            },
+        });
+    }
+    None => (),
+}
+
+===============================================================

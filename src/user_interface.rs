@@ -3,7 +3,7 @@ use palette::convert::FromColor;
 
 use crate::{
     config,
-    mosaic::{Mosaic, PositionOnGrid},
+    mosaic::{Mosaic, PositionOnGrid, Tessera},
     user_interface_app::{MosaicneitorApp, Zoom},
     utils,
 };
@@ -72,9 +72,9 @@ impl eframe::App for MosaicneitorApp {
             ui.horizontal(|ui| {
                 ui.label(format!("{} ->", t!("tessera_size")));
                 ui.label(format!("{} (mm):", t!("A_side")));
-                ui.add(egui::TextEdit::singleline(&mut self.tessera_size_a).desired_width(75.0));
+                ui.add(egui::TextEdit::singleline(&mut self.tessera_size_h).desired_width(75.0));
                 ui.label(format!("{} (mm):", t!("B_side")));
-                ui.add(egui::TextEdit::singleline(&mut self.tessera_size_b).desired_width(75.0));
+                ui.add(egui::TextEdit::singleline(&mut self.tessera_size_v).desired_width(75.0));
             });
             ui.separator();
             ui.horizontal(|ui| {
@@ -88,7 +88,8 @@ impl eframe::App for MosaicneitorApp {
                 }
                 ui.add_space(75.0);
                 if ui.button(t!("btn_generate_a_new_blank_mosaic")).clicked() {
-                    self.mosaic = self.get_a_blank_mosaic();
+                    self.mosaic =
+                        self.get_a_blank_mosaic_with_all_tesserae_equal_color(egui::Color32::WHITE);
                     self.show_tesserae_grid = true;
                     self.show_actual_tesserae = true;
                 }
@@ -99,9 +100,6 @@ impl eframe::App for MosaicneitorApp {
                 ui.checkbox(&mut self.show_image, t!("image"));
                 ui.checkbox(&mut self.show_tesserae_grid, t!("tesserae_grid"));
                 ui.checkbox(&mut self.show_actual_tesserae, t!("actual_tesserae"));
-                if !self.show_actual_tesserae {
-                    self.selected_tessera = None;
-                }
                 ui.add_space(45.0);
                 ui.label("Zoom: ");
                 ui.selectable_value(&mut self.zoom_level, Zoom::X1, "x1");
@@ -173,32 +171,11 @@ impl eframe::App for MosaicneitorApp {
                         gap_between_tesserae,
                     );
                     painter.extend(actual_tesserae);
-                    match &self.selected_tessera {
-                        Some(pos) => {
-                            let x = start_position.x
-                                + (pos.column * tessera_size[0]
-                                    + (pos.column - 1) * gap_between_tesserae
-                                    - tessera_size[0] / 2) as f32;
-                            let y = start_position.y
-                                + (pos.row * tessera_size[1] + (pos.row - 1) * gap_between_tesserae
-                                    - tessera_size[1] / 2) as f32;
-                            painter.add(egui::epaint::CircleShape {
-                                center: egui::Pos2 { x, y },
-                                radius: ((tessera_size[0] + tessera_size[1]) / 5) as f32,
-                                fill: config::COLOR_FOR_HIGHLIGHTING,
-                                stroke: egui::Stroke {
-                                    width: 1.0,
-                                    color: config::COLOR_FOR_HIGHLIGHTING,
-                                },
-                            });
-                        }
-                        None => (),
-                    }
                 }
                 if ui.rect_contains_pointer(egui::Rect::from_min_max(start_position, end_position))
                 {
                     ctx.input(|i| {
-                        if i.pointer.button_clicked(egui::PointerButton::Primary) {
+                        if i.pointer.button_clicked(egui::PointerButton::Secondary) {
                             if let Some(pos) = i.pointer.interact_pos() {
                                 let tessera_position = get_tessera_position(
                                     pos,
@@ -206,7 +183,18 @@ impl eframe::App for MosaicneitorApp {
                                     tessera_size,
                                     gap_between_tesserae,
                                 );
-                                self.selected_tessera = Some(tessera_position);
+                                let dummy_color_srgba: palette::Srgba<f32> = palette::Srgba::from(
+                                    egui::Color32::LIGHT_BLUE.to_srgba_unmultiplied(),
+                                )
+                                .into();
+                                let dummy_color = palette::Oklch::from_color(dummy_color_srgba);
+                                match self.mosaic.change_tessera(
+                                    &tessera_position,
+                                    Tessera { color: dummy_color },
+                                ) {
+                                    Ok(_s) => (),
+                                    Err(e) => println!("{e}"),
+                                };
                             }
                         }
                     });
@@ -264,11 +252,11 @@ fn generate_shapes_to_paint_mosaic(
 ) -> Vec<egui::Shape> {
     let mut shapes = Vec::new();
     let tessera_size = [
-        mosaic.general_tessera_size.horizontal * zoom_factor,
-        mosaic.general_tessera_size.vertical * zoom_factor,
+        mosaic.get_general_tessera_size().horizontal * zoom_factor,
+        mosaic.get_general_tessera_size().vertical * zoom_factor,
     ];
     let mut y = start_position.y;
-    for row in &mosaic.contents {
+    for row in mosaic.get_contents() {
         let mut x = start_position.x;
         for tessera in row {
             let rgbcolor_for_tessera: palette::Srgba<u8> =

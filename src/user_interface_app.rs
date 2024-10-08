@@ -4,7 +4,7 @@ use palette::convert::FromColor;
 
 use crate::{
     config,
-    mosaic::{Mosaic, PositionOnGrid, RectangleInMm, Tessera},
+    mosaic::{Mosaic, RectangleInMm, Tessera},
     utils,
 };
 
@@ -16,13 +16,12 @@ pub(crate) struct MosaicneitorApp {
     pub(crate) mosaic: Mosaic,
     pub(crate) mosaic_dimension_h: String,
     pub(crate) mosaic_dimension_v: String,
-    pub(crate) tessera_size_a: String,
-    pub(crate) tessera_size_b: String,
+    pub(crate) tessera_size_h: String,
+    pub(crate) tessera_size_v: String,
     pub(crate) zoom_level: Zoom,
     pub(crate) show_image: bool,
     pub(crate) show_tesserae_grid: bool,
     pub(crate) show_actual_tesserae: bool,
-    pub(crate) selected_tessera: Option<PositionOnGrid>,
 }
 
 impl Default for MosaicneitorApp {
@@ -53,13 +52,12 @@ impl Default for MosaicneitorApp {
             ),
             mosaic_dimension_h: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_HORIZONTAL_MM.to_string(),
             mosaic_dimension_v: config::DEFAULT_OVERAL_MOSAIC_DIMENSIONS_VERTICAL_MM.to_string(),
-            tessera_size_a: config::DEFAULT_BASE_TESSERA_SIZE_HORIZONTAL_MM.to_string(),
-            tessera_size_b: config::DEFAULT_BASE_TESSERA_SIZE_VERTICAL_MM.to_string(),
+            tessera_size_h: config::DEFAULT_BASE_TESSERA_SIZE_HORIZONTAL_MM.to_string(),
+            tessera_size_v: config::DEFAULT_BASE_TESSERA_SIZE_VERTICAL_MM.to_string(),
             zoom_level: Zoom::X1,
             show_image: false,
             show_tesserae_grid: true,
             show_actual_tesserae: true,
-            selected_tessera: None,
         }
     }
 }
@@ -154,11 +152,11 @@ impl MosaicneitorApp {
 
     pub fn get_tessera_size(&self) -> [usize; 2] {
         [
-            match self.tessera_size_a.parse::<usize>() {
+            match self.tessera_size_h.parse::<usize>() {
                 Ok(size) => size,
                 Err(_error) => 1,
             },
-            match self.tessera_size_b.parse::<usize>() {
+            match self.tessera_size_v.parse::<usize>() {
                 Ok(size) => size,
                 Err(_error) => 1,
             },
@@ -173,16 +171,6 @@ impl MosaicneitorApp {
             Zoom::X4 => 4,
             Zoom::X5 => 5,
         }
-    }
-
-    pub fn get_a_blank_mosaic(&self) -> Mosaic {
-        Mosaic::new(
-            self.loaded_image.clone(),
-            RectangleInMm {
-                horizontal: self.get_tessera_size()[0],
-                vertical: self.get_tessera_size()[1],
-            },
-        )
     }
 
     pub fn get_a_blank_mosaic_with_all_tesserae_equal_color(
@@ -307,16 +295,16 @@ mod test {
     fn get_tessera_size_yields_correct_values_or_defaults() {
         let mut app = MosaicneitorApp::default();
 
-        app.tessera_size_a = String::from("10");
-        app.tessera_size_b = String::from("20");
+        app.tessera_size_h = String::from("10");
+        app.tessera_size_v = String::from("20");
         assert_eq!(app.get_tessera_size(), [10, 20]);
 
-        app.tessera_size_a = String::from("10.8");
-        app.tessera_size_b = String::from("20.8");
+        app.tessera_size_h = String::from("10.8");
+        app.tessera_size_v = String::from("20.8");
         assert_eq!(app.get_tessera_size(), [1, 1]);
 
-        app.tessera_size_a = String::from("eqwer");
-        app.tessera_size_b = String::from("asdf");
+        app.tessera_size_h = String::from("eqwer");
+        app.tessera_size_v = String::from("asdf");
         assert_eq!(app.get_tessera_size(), [1, 1]);
     }
 
@@ -370,8 +358,8 @@ mod test {
         let mut app = MosaicneitorApp::default();
         app.mosaic_dimension_h = String::from("500");
         app.mosaic_dimension_v = String::from("300");
-        app.tessera_size_a = String::from("10");
-        app.tessera_size_b = String::from("10");
+        app.tessera_size_h = String::from("10");
+        app.tessera_size_v = String::from("10");
         app.image = Some(egui::ColorImage::example());
         let mosaic = app.get_mosaic_from_loaded_image();
         assert_eq!(

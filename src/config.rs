@@ -21,7 +21,6 @@ pub const DEFAULT_BASE_TESSERA_SIZE_VERTICAL_MM: usize = 10;
 pub const DEFAULT_GAP_BETWEEN_TESSSELAE: usize = 1;
 
 pub const COLOR_FOR_GRID: egui::Color32 = egui::Color32::LIGHT_RED;
-pub const COLOR_FOR_HIGHLIGHTING: egui::Color32 = egui::Color32::GREEN;
 
 #[cfg(test)]
 mod test {
