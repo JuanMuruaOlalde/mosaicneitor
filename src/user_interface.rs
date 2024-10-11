@@ -88,11 +88,15 @@ impl eframe::App for MosaicneitorApp {
                 }
                 ui.add_space(75.0);
                 if ui.button(t!("btn_generate_a_new_blank_mosaic")).clicked() {
-                    self.mosaic =
-                        self.get_a_blank_mosaic_with_all_tesserae_equal_color(egui::Color32::WHITE);
+                    let color_srgba: palette::Srgba<f32> =
+                        palette::Srgba::from(self.background_color.to_tuple()).into();
+                    self.mosaic = self.get_a_blank_mosaic_with_all_tesserae_equal_color(
+                        palette::Oklch::from_color(color_srgba),
+                    );
                     self.show_tesserae_grid = true;
                     self.show_actual_tesserae = true;
                 }
+                ui.color_edit_button_srgba(&mut self.background_color);
             });
             ui.separator();
             ui.horizontal(|ui| {
@@ -107,6 +111,14 @@ impl eframe::App for MosaicneitorApp {
                 ui.selectable_value(&mut self.zoom_level, Zoom::X3, "x3");
                 ui.selectable_value(&mut self.zoom_level, Zoom::X4, "x4");
                 ui.selectable_value(&mut self.zoom_level, Zoom::X5, "x5");
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                ui.label(format!(
+                    "({})",
+                    t!("you-can-right-clic-or-middle-clic-to-change-each-tessera-color")
+                ));
+                ui.color_edit_button_srgba(&mut self.foreground_color);
             });
         });
 
@@ -183,14 +195,34 @@ impl eframe::App for MosaicneitorApp {
                                     tessera_size,
                                     gap_between_tesserae,
                                 );
-                                let dummy_color_srgba: palette::Srgba<f32> = palette::Srgba::from(
-                                    egui::Color32::LIGHT_BLUE.to_srgba_unmultiplied(),
-                                )
-                                .into();
-                                let dummy_color = palette::Oklch::from_color(dummy_color_srgba);
+                                let color_srgba: palette::Srgba<f32> =
+                                    palette::Srgba::from(self.foreground_color.to_tuple()).into();
                                 match self.mosaic.change_tessera(
                                     &tessera_position,
-                                    Tessera { color: dummy_color },
+                                    Tessera {
+                                        color: palette::Oklch::from_color(color_srgba),
+                                    },
+                                ) {
+                                    Ok(_s) => (),
+                                    Err(e) => println!("{e}"),
+                                };
+                            }
+                        }
+                        if i.pointer.button_clicked(egui::PointerButton::Middle) {
+                            if let Some(pos) = i.pointer.interact_pos() {
+                                let tessera_position = get_tessera_position(
+                                    pos,
+                                    start_position,
+                                    tessera_size,
+                                    gap_between_tesserae,
+                                );
+                                let color_srgba: palette::Srgba<f32> =
+                                    palette::Srgba::from(self.background_color.to_tuple()).into();
+                                match self.mosaic.change_tessera(
+                                    &tessera_position,
+                                    Tessera {
+                                        color: palette::Oklch::from_color(color_srgba),
+                                    },
                                 ) {
                                     Ok(_s) => (),
                                     Err(e) => println!("{e}"),
@@ -259,12 +291,13 @@ fn generate_shapes_to_paint_mosaic(
     for row in mosaic.get_contents() {
         let mut x = start_position.x;
         for tessera in row {
-            let rgbcolor_for_tessera: palette::Srgba<u8> =
+            let srgbcolor_for_tessera: palette::Srgba<u8> =
                 palette::Srgba::from_color(tessera.color).into();
-            let egui_color_for_tessera = egui::Color32::from_rgb(
-                rgbcolor_for_tessera.red,
-                rgbcolor_for_tessera.green,
-                rgbcolor_for_tessera.blue,
+            let egui_color_for_tessera = egui::Color32::from_rgba_unmultiplied(
+                srgbcolor_for_tessera.red,
+                srgbcolor_for_tessera.green,
+                srgbcolor_for_tessera.blue,
+                srgbcolor_for_tessera.alpha,
             );
             shapes.push(egui::epaint::Shape::Rect(egui::epaint::RectShape {
                 rect: egui::Rect {

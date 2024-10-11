@@ -55,13 +55,13 @@ impl Mosaic {
     ) -> Result<(), String> {
         if position.row > self.contents.len() {
             return Err(format!(
-                "Out of bounds! The mosaic has only {} rows. And you want to change the {}nt row.",
+                "Out of bounds! The mosaic has {} rows. And you want to change the {}nt row.",
                 self.contents.len(),
                 position.row
             ));
         }
         if position.column > self.contents[position.row].len() {
-            return Err(format!("Out of bounds! The {}nt row in the mosaic has only {} columns. And you want to change the {}nt column.", position.row, self.contents[position.row].len(), position.column));
+            return Err(format!("Out of bounds! The {}nt row in the mosaic has {} columns. And you want to change the {}nt column.", position.row, self.contents[position.row].len(), position.column));
         }
         let _ = std::mem::replace(
             &mut self.contents[position.row - 1][position.column - 1],

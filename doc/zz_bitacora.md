@@ -6,6 +6,13 @@
 
 
 ----
+20241010
+
+You have basic edit capabilities over the displayed mosaic:
+- right-clic to change a tessera to a foreground color (selectable).
+- middle-clic to change a tessera to a background color (selectable).
+
+----
 20240913
 
 The program can display a basic mosaic,

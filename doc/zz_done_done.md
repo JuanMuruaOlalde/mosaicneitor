@@ -2,6 +2,13 @@
 
 ----
 
+Once you have generated a mosaic and are displaying it:
+- put one tessera to foreground color by right-cliking onto it.
+- put one tessera to background color by middle-cliking onto it. 
+(Both, foreground and background color, selectable with a color chooser dialog.)
+
+----
+
 Allow display to jump between two modes:
 - show image and (hollow) tesserae grid on top of it.
 - show only (solid) tesserae, without the underline image.

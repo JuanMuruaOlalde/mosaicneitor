@@ -18,6 +18,19 @@ In order to confirm that she/he is ok with the dimensions and size.
 
 ----
 
+Save (serialize) the mosaic to a file on disk.
+Open (deserialize) the mosaic from a file on disk.
+
+----
+
+Print the mosaic onto paper sheets,
+using an appropriate algorithm to ensure collation between the sheets. 
+
+This must create a real-size template to use as a background reference
+for placing the tesserae when working on the actual mosaic.
+
+----
+
 Pick and change shape, for any given tessera. 
 
 To mimic cuts.

@@ -22,10 +22,14 @@ pub(crate) struct MosaicneitorApp {
     pub(crate) show_image: bool,
     pub(crate) show_tesserae_grid: bool,
     pub(crate) show_actual_tesserae: bool,
+    pub(crate) background_color: egui::Color32,
+    pub(crate) foreground_color: egui::Color32,
 }
 
 impl Default for MosaicneitorApp {
     fn default() -> Self {
+        let background_color = egui::Color32::from_rgba_unmultiplied(245, 245, 245, 255);
+        let foreground_color = egui::Color32::LIGHT_BLUE;
         Self {
             file_dialog: FileDialog::new()
                 .show_new_folder_button(false)
@@ -58,6 +62,8 @@ impl Default for MosaicneitorApp {
             show_image: false,
             show_tesserae_grid: true,
             show_actual_tesserae: true,
+            background_color: background_color,
+            foreground_color: foreground_color,
         }
     }
 }
@@ -175,7 +181,7 @@ impl MosaicneitorApp {
 
     pub fn get_a_blank_mosaic_with_all_tesserae_equal_color(
         &self,
-        choosen_color: egui::Color32,
+        choosen_color: palette::Oklch,
     ) -> Mosaic {
         let general_tessera_size = RectangleInMm {
             horizontal: self.get_tessera_size()[0],
@@ -185,9 +191,6 @@ impl MosaicneitorApp {
             horizontal: self.get_mosaic_dimensions()[0],
             vertical: self.get_mosaic_dimensions()[1],
         };
-        let color_srgba: palette::Srgba<f32> =
-            palette::Srgba::from(choosen_color.to_srgba_unmultiplied()).into();
-        let color_oklch = palette::Oklch::from_color(color_srgba);
         let mut mosaic = Mosaic::new(None, general_tessera_size);
         for _vertical_position in (1..mosaic_size.vertical)
             .step_by(general_tessera_size.vertical + config::DEFAULT_GAP_BETWEEN_TESSSELAE)
@@ -196,7 +199,9 @@ impl MosaicneitorApp {
             for _horizontal_position in (1..mosaic_size.horizontal)
                 .step_by(general_tessera_size.horizontal + config::DEFAULT_GAP_BETWEEN_TESSSELAE)
             {
-                row.push(Tessera { color: color_oklch });
+                row.push(Tessera {
+                    color: choosen_color,
+                });
             }
             mosaic.add_a_row_of_tesserae(row);
         }
