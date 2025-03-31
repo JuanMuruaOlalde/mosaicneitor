@@ -33,14 +33,14 @@ impl eframe::App for MosaicneitorApp {
 
         egui::TopBottomPanel::top("controls").show(ctx, |ui| {
             if ui.button(t!("btn_choose_image")).clicked() {
-                self.file_dialog.select_file();
+                self.image_file_dialog.select_file();
             }
-            self.file_dialog.update(ctx);
-            if let Some(path) = self.file_dialog.take_selected() {
-                self.selected_file = Some(path.to_path_buf());
+            self.image_file_dialog.update(ctx);
+            if let Some(path) = self.image_file_dialog.take_selected() {
+                self.selected_image_file = Some(path.to_path_buf());
                 self.load_image_from_selected_file();
             }
-            match &self.selected_file {
+            match &self.selected_image_file {
                 None => {
                     ui.label("?");
                 }
@@ -82,7 +82,7 @@ impl eframe::App for MosaicneitorApp {
                     .button(t!("btn_generate_a_new_mosaic_from_image"))
                     .clicked()
                 {
-                    self.mosaic = self.get_mosaic_from_loaded_image();
+                    self.mosaic = self.generate_a_new_mosaic_from_loaded_image();
                     self.show_tesserae_grid = true;
                     self.show_actual_tesserae = true;
                 }
@@ -90,13 +90,44 @@ impl eframe::App for MosaicneitorApp {
                 if ui.button(t!("btn_generate_a_new_blank_mosaic")).clicked() {
                     let color_srgba: palette::Srgba<f32> =
                         palette::Srgba::from(self.background_color.to_tuple()).into();
-                    self.mosaic = self.get_a_blank_mosaic_with_all_tesserae_equal_color(
+                    self.mosaic = self.generate_a_new_blank_mosaic_with_all_tesserae_equal_color(
                         palette::Oklch::from_color(color_srgba),
                     );
                     self.show_tesserae_grid = true;
                     self.show_actual_tesserae = true;
                 }
                 ui.color_edit_button_srgba(&mut self.background_color);
+            });
+            ui.separator();
+            ui.horizontal(|ui| {
+                if ui.button(t!("btn_load_mosaic")).clicked() {
+                    self.mosaic_file_dialog.select_file();
+                }
+                self.mosaic_file_dialog.update(ctx);
+                if let Some(path) = self.mosaic_file_dialog.take_selected() {
+                    self.selected_mosaic_file = Some(path.to_path_buf());
+                    self.load_mosaic_from_selected_file();
+                }
+                if ui.button(t!("btn_save_mosaic")).clicked() {
+                    match &self.selected_mosaic_file {
+                        Some(s) => self.save_mosaic_to_selected_file(),
+                        None => {
+                            self.mosaic_file_dialog.save_file();
+                        }
+                    }
+                    self.mosaic_file_dialog.update(ctx);
+                    if let Some(path) = self.mosaic_file_dialog.take_selected() {
+                        self.selected_mosaic_file = Some(path.to_path_buf());
+                    }
+                }
+                match &self.selected_mosaic_file {
+                    None => {
+                        ui.label("");
+                    }
+                    Some(file) => {
+                        ui.label(format!("{}", file.as_path().display()));
+                    }
+                }
             });
             ui.separator();
             ui.horizontal(|ui| {

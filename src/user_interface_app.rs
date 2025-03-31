@@ -9,10 +9,12 @@ use crate::{
 };
 
 pub(crate) struct MosaicneitorApp {
-    pub(crate) file_dialog: FileDialog,
-    pub(crate) selected_file: Option<std::path::PathBuf>,
+    pub(crate) image_file_dialog: FileDialog,
+    pub(crate) selected_image_file: Option<std::path::PathBuf>,
     loaded_image: Option<image::Rgba32FImage>,
     pub(crate) image: Option<egui::ColorImage>,
+    pub(crate) mosaic_file_dialog: FileDialog,
+    pub(crate) selected_mosaic_file: Option<std::path::PathBuf>,
     pub(crate) mosaic: Mosaic,
     pub(crate) mosaic_dimension_h: String,
     pub(crate) mosaic_dimension_v: String,
@@ -31,7 +33,7 @@ impl Default for MosaicneitorApp {
         let background_color = egui::Color32::from_rgba_unmultiplied(245, 245, 245, 255);
         let foreground_color = egui::Color32::LIGHT_BLUE;
         Self {
-            file_dialog: FileDialog::new()
+            image_file_dialog: FileDialog::new()
                 .show_new_folder_button(false)
                 .default_pos([20.0, 30.0])
                 .initial_directory(crate::config::default_working_folder())
@@ -44,9 +46,23 @@ impl Default for MosaicneitorApp {
                     std::sync::Arc::new(|path| path.extension().unwrap_or_default() == "jpg"),
                 )
                 .default_file_filter("JPEG"),
-            selected_file: None,
+            selected_image_file: None,
             loaded_image: None,
             image: None,
+            mosaic_file_dialog: FileDialog::new()
+                .show_devices(true)
+                .show_removable_devices(true)
+                .show_new_folder_button(true)
+                .show_path_edit_button(true)
+                .default_pos([20.0, 30.0])
+                .initial_directory(crate::config::default_working_folder())
+                .add_file_filter(
+                    "MOSAIC",
+                    std::sync::Arc::new(|path| path.extension().unwrap_or_default() == "mosaic"),
+                )
+                .default_file_filter("MOSAIC")
+                .allow_file_overwrite(true),
+            selected_mosaic_file: None,
             mosaic: Mosaic::new(
                 None,
                 RectangleInMm {
@@ -90,7 +106,7 @@ impl MosaicneitorApp {
     }
 
     pub(crate) fn load_image_from_selected_file(&mut self) {
-        match &self.selected_file {
+        match &self.selected_image_file {
             None => self.image = None,
             Some(path) => {
                 let loaded_image = image::ImageReader::open(path);
@@ -179,7 +195,7 @@ impl MosaicneitorApp {
         }
     }
 
-    pub fn get_a_blank_mosaic_with_all_tesserae_equal_color(
+    pub fn generate_a_new_blank_mosaic_with_all_tesserae_equal_color(
         &self,
         choosen_color: palette::Oklch,
     ) -> Mosaic {
@@ -208,7 +224,7 @@ impl MosaicneitorApp {
         mosaic
     }
 
-    pub fn get_mosaic_from_loaded_image(&self) -> Mosaic {
+    pub fn generate_a_new_mosaic_from_loaded_image(&self) -> Mosaic {
         let tessera_size = RectangleInMm {
             horizontal: self.get_tessera_size()[0],
             vertical: self.get_tessera_size()[1],
@@ -243,6 +259,30 @@ impl MosaicneitorApp {
             mosaic.add_a_row_of_tesserae(row);
         }
         mosaic
+    }
+
+    pub fn load_mosaic_from_selected_file(&self) {
+        match &self.selected_image_file {
+            None => println!(
+                "You asked to load mosaic from file. But there is no selected file to load from!"
+            ),
+            Some(path) => {
+                println!("Load from {:?}", path);
+                todo!()
+            }
+        }
+    }
+
+    pub fn save_mosaic_to_selected_file(&self) {
+        match &self.selected_image_file {
+            None => println!(
+                "You asked to save mosaic to file. But there is no selected file to save to!"
+            ),
+            Some(path) => {
+                println!("Save to {:?}", path);
+                todo!()
+            }
+        }
     }
 
     fn get_pixel_position_on_image(&self, point_position_on_mosaic: [usize; 2]) -> [usize; 2] {
@@ -366,7 +406,7 @@ mod test {
         app.tessera_size_h = String::from("10");
         app.tessera_size_v = String::from("10");
         app.image = Some(egui::ColorImage::example());
-        let mosaic = app.get_mosaic_from_loaded_image();
+        let mosaic = app.generate_a_new_mosaic_from_loaded_image();
         assert_eq!(
             mosaic.get_number_of_rows(),
             300 / (10 + config::DEFAULT_GAP_BETWEEN_TESSSELAE) + 1

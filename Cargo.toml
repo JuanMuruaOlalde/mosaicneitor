@@ -6,13 +6,14 @@ edition = "2021"
 
 [dependencies]
 eframe = "0.28.1"
-dirs = "5.0.1"
 egui-file-dialog = "0.6.0"
 egui_extras = { version = "0.28.1", features = ["all_loaders"] }
-image = { version = "0.25.2", features = ["png", "jpeg"] }
 rust-i18n = "3.1.2"
 semver = "1.0.23"
-palette = "0.7.6"
+dirs = "5.0.1"
+image = { version = "0.25.2", features = ["png", "jpeg"] }
+palette = { version = "0.7.6", features = ["serde", "serializing"] }
+serde = "1.0.210"
 
 [package.metadata.i18n]
 locales = ["en", "es"]

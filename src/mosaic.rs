@@ -1,17 +1,20 @@
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Mosaic {
+    #[serde(skip)]
     base_image: Option<image::Rgba32FImage>,
     general_tessera_size: RectangleInMm,
     contents: Vec<Vec<Tessera>>,
 }
 
-#[derive(Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 pub struct Tessera {
+    #[serde(with = "palette::serde::as_array")]
     pub color: palette::Oklch,
     //size: RectangleInMm,  to be implemented... (difficult... how to display different row sizes on the user interface ?!?)
     //shape: to be implemented... (even more difficult... how to represent a non-rectangular tessera of arbitrary shape ?!?)
 }
 
-#[derive(Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct RectangleInMm {
     pub horizontal: usize,
     pub vertical: usize,

@@ -15,5 +15,7 @@
     "image": "Image",
     "tesserae_grid": "Grid",
     "actual_tesserae": "Mosaic",
-    "you-can-right-clic-or-middle-clic-to-change-each-tessera-color": "you can right-clic or middle-clic to change each tessera color"
+    "you-can-right-clic-or-middle-clic-to-change-each-tessera-color": "you can mouse right-clic or middle-clic to change each tessera color",
+    "btn_load_mosaic": "Load a mosaic from file",
+    "btn_save_mosaic": "Save mosaic to file"
 }

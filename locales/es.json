@@ -15,5 +15,7 @@
     "image": "Imagen",
     "tesserae_grid": "Rejilla",
     "actual_tesserae": "Mosaico",
-    "you-can-right-clic-or-middle-clic-to-change-each-tessera-color": "puedes hacer clic-dcho o clic-medio con el ratón para cambiar cada tesela"
+    "you-can-right-clic-or-middle-clic-to-change-each-tessera-color": "usar clic-dcho o clic-medio del ratón para cambiar cada tesela",
+    "btn_load_mosaic": "Cargar un mosaico",
+    "btn_save_mosaic": "Guardar el mosaico"
 }
